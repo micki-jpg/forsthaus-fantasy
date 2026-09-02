@@ -40,7 +40,7 @@
     }
 
     .header-logo {
-      max-height: 85px;
+      max-height: 100px;
       max-width: 90%;
       object-fit: contain;
       filter: drop-shadow(0 0 10px rgba(230, 0, 126, 0.6));
@@ -255,7 +255,7 @@
 <body>
 
   <header>
-    <img src="https://upload.wikimedia.org/wikipedia/de/b/b5/Forsthaus_Rampensau_Logo.png" alt="Forsthaus Rampensau Logo" class="header-logo">
+    <img src="https://upload.wikimedia.org/wikipedia/de/7/74/Logo_Forsthaus_Rampensau_Germany.webp?utm_source=de.wikipedia.org&utm_campaign=index&utm_content=original" alt="Forsthaus Rampensau Logo" class="header-logo">
     <div class="header-subtitle">Fantasy League</div>
   </header>
 
@@ -266,7 +266,7 @@
       <button id="logout-btn" class="btn btn-danger" style="width: auto; padding: 2px 8px; font-size: 0.75rem; display: none;" onclick="logout()">Logout</button>
     </div>
     <div>
-      <span id="sync-status" style="color: var(--accent-yellow);">🟡 Lokal-Modus</span>
+      <span id="sync-status" style="color: var(--accent-yellow);">🟡 Verbinde...</span>
       <button class="btn btn-secondary" style="width: auto; padding: 4px 10px; font-size: 0.8rem; margin-left: 8px;" onclick="fetchFromCloud()">🔄 Aktualisieren</button>
     </div>
   </div>
@@ -405,24 +405,24 @@
 
     <!-- 5. CLOUD-SYNC -->
     <div id="sync" class="tab-content">
-      <h2>☁️ JSONBin.io Live-Cloud-Sync</h2>
+      <h2>☁️ Live-Cloud-Sync</h2>
       <div class="card" style="max-width: 650px;">
-        <h3>API-Zugangsdaten (Admin)</h3>
-        <p style="color: var(--text-muted)">Trage hier deine Daten von JSONBin.io ein, um den Spielstand live für alle zu synchronisieren.</p>
+        <h3>API-Zugangsdaten (Vorkonfiguriert)</h3>
+        <p style="color: var(--text-muted)">Die Cloud-Zugangsdaten sind direkt im Code hinterlegt.</p>
         
         <div class="form-group">
           <label>JSONBin Bin ID</label>
-          <input type="text" id="cfg-bin-id" placeholder="z.B. 65a123456789...">
+          <input type="text" id="cfg-bin-id">
         </div>
         
         <div class="form-group">
-          <label>JSONBin Master Key (Nur für Admin zum Schreiben)</label>
-          <input type="password" id="cfg-master-key" placeholder="$2a$10$...">
+          <label>JSONBin Master Key</label>
+          <input type="password" id="cfg-master-key">
         </div>
 
-        <button class="btn btn-success" onclick="saveCloudConfig()">💾 Cloud-Anbindung Speichern</button>
+        <button class="btn btn-success" onclick="saveCloudConfig()">💾 Cloud-Anbindung Ändern</button>
 
-        <h3 style="margin-top: 30px;">🔗 Link für Freunde teilen</h3>
+        <h3 style="margin-top: 30px;">🔗 Link für Mädels teilen</h3>
         <div class="form-group">
           <input type="text" id="share-link-input" readonly>
         </div>
@@ -445,7 +445,7 @@
       </div>
       <div class="form-group">
         <label>PIN / Passwort</label>
-        <input type="password" id="login-pin-input" placeholder="z. B. 1234">
+        <input type="password" id="login-pin-input" placeholder="z. B. 1111">
       </div>
       <button class="btn" onclick="submitLogin()">Einloggen</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeLoginModal()">Abbrechen</button>
@@ -453,6 +453,9 @@
   </div>
 
   <script>
+    const HARDCODED_BIN_ID = "6a98742ada38895dfe30d166";
+    const HARDCODED_MASTER_KEY = "$2a$10$HTHlzPVCzW4YJrM0A0aOg.9Iswu54IOBp93QFvCZNQdyHleBiQ3sO";
+
     const DEFAULT_PLAYERS = ["Spielerin 1", "Spielerin 2", "Spielerin 3", "Spielerin 4"];
     const DEFAULT_PINS = ["1111", "2222", "3333", "4444"];
     const DEFAULT_TEAMS = Array.from({ length: 9 }, (_, i) => ({
@@ -462,7 +465,6 @@
       owners: []
     }));
 
-    // Snake Draft für 4 Spielerinnen über 4 Runden (16 Picks)
     const DRAFT_ORDER = [
       0, 1, 2, 3, // Runde 1
       3, 2, 1, 0, // Runde 2
@@ -480,10 +482,14 @@
     };
 
     let currentAuth = JSON.parse(sessionStorage.getItem('rampensau_auth')) || null;
-    let cloudConfig = JSON.parse(localStorage.getItem('rampensau_cloud_config')) || { binId: "", masterKey: "" };
+    
+    let cloudConfig = JSON.parse(localStorage.getItem('rampensau_cloud_config')) || { 
+      binId: HARDCODED_BIN_ID, 
+      masterKey: HARDCODED_MASTER_KEY 
+    };
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('bin')) cloudConfig.binId = urlParams.get('bin');
+    if (!cloudConfig.binId) cloudConfig.binId = HARDCODED_BIN_ID;
+    if (!cloudConfig.masterKey) cloudConfig.masterKey = HARDCODED_MASTER_KEY;
 
     async function saveData() {
       localStorage.setItem('rampensau_app_state', JSON.stringify(state));
@@ -508,7 +514,7 @@
           if (!state.adminPin) state.adminPin = "admin123";
           localStorage.setItem('rampensau_app_state', JSON.stringify(state));
           render();
-          document.getElementById('sync-status').innerText = "🟢 Cloud-Sync Aktiv";
+          document.getElementById('sync-status').innerText = "🟢 Cloud Live";
           document.getElementById('sync-status').style.color = "var(--success)";
         }
       } catch (err) {
@@ -545,10 +551,8 @@
     }
 
     function updateShareLink() {
-      if (cloudConfig.binId) {
-        const baseUrl = window.location.origin + window.location.pathname;
-        document.getElementById('share-link-input').value = `${baseUrl}?bin=${cloudConfig.binId}`;
-      }
+      const baseUrl = window.location.origin + window.location.pathname;
+      document.getElementById('share-link-input').value = baseUrl;
     }
 
     function copyShareLink() {
@@ -931,7 +935,7 @@
     }
 
     render();
-    if (cloudConfig.binId) fetchFromCloud();
+    fetchFromCloud();
   </script>
 </body>
 </html>
