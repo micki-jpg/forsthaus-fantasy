@@ -292,21 +292,22 @@
       <button id="logout-btn" class="btn btn-danger" style="width: auto; padding: 2px 8px; font-size: 0.75rem; display: none;" onclick="logout()">Logout</button>
     </div>
     <div>
-      <span id="sync-status" style="color: var(--accent-yellow);">🟡 Verbinde...</span>
+      <span id="sync-status" style="color: var(--accent-yellow);">🟡 Offline</span>
       <button class="btn btn-secondary" style="width: auto; padding: 4px 10px; font-size: 0.8rem; margin-left: 8px;" onclick="fetchFromCloud()">🔄 Aktualisieren</button>
     </div>
   </div>
 
   <div class="container">
     <div class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('panel')">🏆 Leaderboard</button>
-      <button class="tab-btn" onclick="switchTab('draft')">🎯 Draft Phase</button>
-      <button class="tab-btn" onclick="switchTab('logs')">📝 Event-Log</button>
-      <button class="tab-btn" onclick="switchTab('debug')">🖥️ Console-Log</button>
-      <button class="tab-btn" onclick="switchTab('admin')">⚙️ Admin & Setup</button>
-      <button class="tab-btn" onclick="switchTab('sync')">☁️ Cloud-Sync</button>
+      <button class="tab-btn active" data-tab="panel" onclick="switchTab('panel', this)">🏆 Leaderboard</button>
+      <button class="tab-btn" data-tab="draft" onclick="switchTab('draft', this)">🎯 Draft Phase</button>
+      <button class="tab-btn" data-tab="logs" onclick="switchTab('logs', this)">📝 Event-Log</button>
+      <button class="tab-btn" data-tab="debug" onclick="switchTab('debug', this)">🖥️ Console-Log</button>
+      <button class="tab-btn" data-tab="admin" onclick="switchTab('admin', this)">⚙️ Admin & Setup</button>
+      <button class="tab-btn" data-tab="sync" onclick="switchTab('sync', this)">☁️ Cloud-Sync</button>
     </div>
 
+    <!-- 1. LEADERBOARD -->
     <div id="panel" class="tab-content active">
       <h2>Aktuelle Liga-Rangliste</h2>
       <table>
@@ -322,6 +323,7 @@
       </table>
     </div>
 
+    <!-- 2. DRAFT PHASE -->
     <div id="draft" class="tab-content">
       <h2>Draft Phase (4 Runden Snake Draft)</h2>
       <p style="color: var(--text-muted)">Du kannst nur Teams wählen, wenn du als die <strong>aktuell fällige Spielerin</strong> eingeloggt bist.</p>
@@ -346,6 +348,7 @@
       </div>
     </div>
 
+    <!-- 3. EVENT LOG -->
     <div id="logs" class="tab-content">
       <h2>Verlauf aller vergebenen Punkte</h2>
       <div class="card">
@@ -353,6 +356,7 @@
       </div>
     </div>
 
+    <!-- 4. DEBUG / CONSOLE LOG -->
     <div id="debug" class="tab-content">
       <h2>🖥️ System & Action Console</h2>
       <p style="color: var(--text-muted)">Echtzeit-Protokoll aller Aktivitäten in der App (für alle Teilnehmerinnen transparent einsehbar):</p>
@@ -361,6 +365,7 @@
       </div>
     </div>
 
+    <!-- 5. ADMIN & SETUP -->
     <div id="admin" class="tab-content">
       <h2>Admin & League Setup</h2>
       <div id="admin-locked-notice" style="display: block; background: var(--bg-card); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--danger);">
@@ -450,6 +455,7 @@
       </div>
     </div>
 
+    <!-- 6. CLOUD-SYNC -->
     <div id="sync" class="tab-content">
       <h2>☁️ Live-Cloud-Sync</h2>
       <div class="card" style="max-width: 650px;">
@@ -481,6 +487,7 @@
 
   </div>
 
+  <!-- LOGIN MODAL -->
   <div id="login-modal" class="modal-overlay">
     <div class="modal-card">
       <h3 style="margin-top:0;">🔑 Login / Spielerin wählen</h3>
@@ -517,4 +524,633 @@
       3, 2, 1, 0  // Runde 4
     ];
 
-    let state = JSON.parse(localStorage.getItem('ram
+    function sanitizeState(incoming) {
+      if (!incoming || typeof incoming !== 'object') incoming = {};
+      return {
+        players: Array.isArray(incoming.players) && incoming.players.length ? incoming.players : DEFAULT_PLAYERS,
+        pins: Array.isArray(incoming.pins) && incoming.pins.length ? incoming.pins : DEFAULT_PINS,
+        adminPin: incoming.adminPin || "admin123",
+        teams: Array.isArray(incoming.teams) && incoming.teams.length ? incoming.teams.map((t, i) => ({
+          id: t.id || (i + 1),
+          name: t.name || `Team Slot ${i + 1}`,
+          imgUrl: t.imgUrl || '',
+          owners: Array.isArray(t.owners) ? t.owners : []
+        })) : DEFAULT_TEAMS,
+        draftTurnIndex: typeof incoming.draftTurnIndex === 'number' ? incoming.draftTurnIndex : 0,
+        logs: Array.isArray(incoming.logs) ? incoming.logs : [],
+        debugLogs: Array.isArray(incoming.debugLogs) ? incoming.debugLogs : []
+      };
+    }
+
+    let state = sanitizeState(JSON.parse(localStorage.getItem('rampensau_app_state')));
+
+    let currentAuth = JSON.parse(sessionStorage.getItem('rampensau_auth')) || null;
+    
+    let cloudConfig = JSON.parse(localStorage.getItem('rampensau_cloud_config')) || { 
+      binId: HARDCODED_BIN_ID, 
+      masterKey: HARDCODED_MASTER_KEY 
+    };
+
+    if (!cloudConfig.binId) cloudConfig.binId = HARDCODED_BIN_ID;
+    if (!cloudConfig.masterKey) cloudConfig.masterKey = HARDCODED_MASTER_KEY;
+
+    function getCurrentUserName() {
+      if (!currentAuth) return "Gast";
+      if (currentAuth.type === 'admin') return "👑 Admin";
+      if (currentAuth.type === 'player') return state.players[currentAuth.index] || `Spielerin ${currentAuth.index + 1}`;
+      return "Gast";
+    }
+
+    function logDebug(actionText) {
+      if (!state.debugLogs) state.debugLogs = [];
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      state.debugLogs.push({
+        time: timeStr,
+        user: getCurrentUserName(),
+        action: actionText
+      });
+
+      if (state.debugLogs.length > 100) {
+        state.debugLogs.shift();
+      }
+    }
+
+    async function saveData() {
+      localStorage.setItem('rampensau_app_state', JSON.stringify(state));
+      render();
+      if (cloudConfig.binId && cloudConfig.masterKey) await pushToCloud();
+    }
+
+    async function fetchFromCloud() {
+      const syncStatus = document.getElementById('sync-status');
+      if (!cloudConfig.binId) {
+        if (syncStatus) { syncStatus.innerText = "🟡 Offline"; syncStatus.style.color = "var(--accent-yellow)"; }
+        return;
+      }
+      if (syncStatus) { syncStatus.innerText = "🔄 Lade Cloud Daten..."; syncStatus.style.color = "var(--accent-yellow)"; }
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500); // Max 3.5 Sekunden Warten
+
+        const headers = {};
+        if (cloudConfig.masterKey) headers['X-Master-Key'] = cloudConfig.masterKey;
+
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudConfig.binId}/latest`, { 
+          headers,
+          signal: controller.signal 
+        });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error("Cloud HTTP Fehler");
+        const data = await res.json();
+        
+        if (data && data.record) {
+          state = sanitizeState(data.record);
+          localStorage.setItem('rampensau_app_state', JSON.stringify(state));
+          render();
+          if (syncStatus) { syncStatus.innerText = "🟢 Cloud Live"; syncStatus.style.color = "var(--success)"; }
+        } else {
+          throw new Error("Ungültige Datenstruktur");
+        }
+      } catch (err) {
+        console.warn("Cloud-Sync Fehler oder Offline-Modus:", err.message);
+        if (syncStatus) { syncStatus.innerText = "🔴 Offline / Lokaler Modus"; syncStatus.style.color = "var(--danger)"; }
+      }
+    }
+
+    async function pushToCloud() {
+      const syncStatus = document.getElementById('sync-status');
+      if (!cloudConfig.binId || !cloudConfig.masterKey) return;
+      if (syncStatus) syncStatus.innerText = "⏳ Speichere...";
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudConfig.binId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': cloudConfig.masterKey },
+          body: JSON.stringify(state),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error("Speicherfehler");
+        if (syncStatus) { syncStatus.innerText = "🟢 Cloud Live"; syncStatus.style.color = "var(--success)"; }
+      } catch (err) {
+        console.warn("Cloud Speichern fehlgeschlagen:", err.message);
+        if (syncStatus) { syncStatus.innerText = "🔴 Speicher-Fehler"; syncStatus.style.color = "var(--danger)"; }
+      }
+    }
+
+    function saveCloudConfig() {
+      cloudConfig.binId = document.getElementById('cfg-bin-id').value.trim();
+      cloudConfig.masterKey = document.getElementById('cfg-master-key').value.trim();
+      localStorage.setItem('rampensau_cloud_config', JSON.stringify(cloudConfig));
+      updateShareLink();
+      logDebug("Cloud-API Daten geändert");
+      pushToCloud();
+      alert("Cloud-Konfiguration gespeichert!");
+    }
+
+    function updateShareLink() {
+      const linkInput = document.getElementById('share-link-input');
+      if (linkInput) {
+        linkInput.value = window.location.href.split('#')[0];
+      }
+    }
+
+    function copyShareLink() {
+      const linkInput = document.getElementById('share-link-input');
+      if (linkInput && linkInput.value) {
+        navigator.clipboard.writeText(linkInput.value);
+        alert("Link in Zwischenablage kopiert!");
+      }
+    }
+
+    function switchTab(tabId, btnElement) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      
+      const targetContent = document.getElementById(tabId);
+      if (targetContent) targetContent.classList.add('active');
+      
+      if (btnElement) {
+        btnElement.classList.add('active');
+      } else {
+        const matchingBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        if (matchingBtn) matchingBtn.classList.add('active');
+      }
+      render();
+    }
+
+    /* AUTH LOGIC */
+    function openLoginModal(targetRole = null) {
+      const sel = document.getElementById('login-user-select');
+      sel.innerHTML = '';
+      
+      state.players.forEach((p, idx) => {
+        sel.innerHTML += `<option value="player-${idx}">${p}</option>`;
+      });
+      sel.innerHTML += `<option value="admin">👑 Admin</option>`;
+
+      if (targetRole === 'admin') sel.value = 'admin';
+
+      document.getElementById('login-pin-input').value = '';
+      document.getElementById('login-modal').style.display = 'flex';
+    }
+
+    function closeLoginModal() {
+      document.getElementById('login-modal').style.display = 'none';
+    }
+
+    function submitLogin() {
+      const val = document.getElementById('login-user-select').value;
+      const pin = document.getElementById('login-pin-input').value.trim();
+
+      if (val === 'admin') {
+        if (pin === state.adminPin) {
+          currentAuth = { type: 'admin' };
+          sessionStorage.setItem('rampensau_auth', JSON.stringify(currentAuth));
+          logDebug("Admin-Login erfolgreich");
+          closeLoginModal();
+          saveData();
+          alert("Erfolgreich als Admin eingeloggt!");
+        } else {
+          alert("Falsches Admin-Passwort!");
+        }
+      } else if (val.startsWith('player-')) {
+        const pIdx = parseInt(val.replace('player-', ''), 10);
+        if (pin === state.pins[pIdx]) {
+          currentAuth = { type: 'player', index: pIdx };
+          sessionStorage.setItem('rampensau_auth', JSON.stringify(currentAuth));
+          logDebug(`Login erfolgreich (${state.players[pIdx]})`);
+          closeLoginModal();
+          saveData();
+          alert(`Eingeloggt als ${state.players[pIdx]}`);
+        } else {
+          alert("Falscher PIN für diese Spielerin!");
+        }
+      }
+    }
+
+    function logout() {
+      logDebug("Logout durchgeführt");
+      currentAuth = null;
+      sessionStorage.removeItem('rampensau_auth');
+      saveData();
+    }
+
+    function getTeamPoints(teamId) {
+      return state.logs.filter(l => l.teamId === teamId).reduce((sum, l) => sum + l.points, 0);
+    }
+
+    function getPlayerPoints(playerIndex) {
+      const myTeams = state.teams.filter(t => t.owners.includes(playerIndex));
+      return myTeams.reduce((sum, t) => sum + getTeamPoints(t.id), 0);
+    }
+
+    function render() {
+      const activeNameEl = document.getElementById('active-user-name');
+      const logoutBtn = document.getElementById('logout-btn');
+
+      if (activeNameEl && logoutBtn) {
+        if (!currentAuth) {
+          activeNameEl.innerText = "Nicht eingeloggt (Nur-Lese-Modus)";
+          logoutBtn.style.display = 'none';
+        } else if (currentAuth.type === 'admin') {
+          activeNameEl.innerText = "👑 Admin";
+          logoutBtn.style.display = 'inline-block';
+        } else if (currentAuth.type === 'player') {
+          activeNameEl.innerText = `🎮 ${state.players[currentAuth.index] || 'Spielerin'}`;
+          logoutBtn.style.display = 'inline-block';
+        }
+      }
+
+      renderLeaderboard();
+      renderDraft();
+      renderLogs();
+      renderDebugConsole();
+      renderAdmin();
+      
+      const binInput = document.getElementById('cfg-bin-id');
+      const keyInput = document.getElementById('cfg-master-key');
+      if (binInput) binInput.value = cloudConfig.binId || '';
+      if (keyInput) keyInput.value = cloudConfig.masterKey || '';
+      updateShareLink();
+    }
+
+    function renderLeaderboard() {
+      const tbody = document.getElementById('leaderboard-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const playerScores = state.players.map((name, index) => {
+        const myTeams = state.teams.filter(t => t.owners.includes(index));
+        const totalPoints = getPlayerPoints(index);
+        return { name, teams: myTeams, totalPoints };
+      });
+
+      playerScores.sort((a, b) => b.totalPoints - a.totalPoints);
+
+      playerScores.forEach((p, rank) => {
+        let rankClass = rank === 0 ? 'rank-1' : rank === 1 ? 'rank-2' : rank === 2 ? 'rank-3' : '';
+        const teamDetails = p.teams.map(t => {
+          const imgTag = t.imgUrl ? `<img src="${t.imgUrl}" class="mini-team-thumb">` : '';
+          return `
+            <div class="leaderboard-team-row">
+              ${imgTag}
+              <span>${t.name} (<strong style="color: var(--accent-yellow);">${getTeamPoints(t.id)} Pts</strong>)</span>
+            </div>
+          `;
+        }).join('');
+        
+        tbody.innerHTML += `
+          <tr>
+            <td><span class="rank-badge ${rankClass}">${rank + 1}</span></td>
+            <td><strong>${p.name}</strong></td>
+            <td>${teamDetails || '<i>Keine Teams gedraftet</i>'}</td>
+            <td><strong style="color: var(--accent-yellow); font-size: 1.3rem;">${p.totalPoints}</strong></td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderDraft() {
+      const grid = document.getElementById('team-draft-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const isFinished = state.draftTurnIndex >= DRAFT_ORDER.length;
+      const currentPIndex = isFinished ? null : DRAFT_ORDER[state.draftTurnIndex];
+      const drafterEl = document.getElementById('current-drafter');
+      if (drafterEl) drafterEl.innerText = isFinished ? "Draft Beendet!" : (state.players[currentPIndex] || '-');
+
+      const canIUserPick = currentAuth && (currentAuth.type === 'admin' || (currentAuth.type === 'player' && currentAuth.index === currentPIndex));
+
+      const undoBtn = document.getElementById('undo-btn');
+      if (undoBtn) undoBtn.disabled = !(currentAuth && (currentAuth.type === 'admin' || (currentAuth.type === 'player' && currentAuth.index === currentPIndex)));
+
+      state.teams.forEach((team, index) => {
+        const alreadyInMyKader = currentPIndex !== null && team.owners.includes(currentPIndex);
+        let badge = alreadyInMyKader 
+          ? `<span class="badge badge-red">Bereits im Kader</span>` 
+          : `<span class="badge badge-green">Verfügbar</span>`;
+
+        const ownerNames = team.owners.map(pIdx => state.players[pIdx] || `Spielerin ${pIdx + 1}`).join(', ');
+        const imgHTML = team.imgUrl 
+          ? `<img src="${team.imgUrl}" class="team-card-img" alt="${team.name}">` 
+          : `<div class="team-img-placeholder">🦝 Kein Bild vorhanden</div>`;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.opacity = alreadyInMyKader ? '0.5' : '1';
+        
+        let buttonHTML = '';
+        if (!isFinished && !alreadyInMyKader) {
+          if (canIUserPick) {
+            buttonHTML = `<button class="btn" style="margin-top:10px;" onclick="draftTeam(${index})">Wählen</button>`;
+          } else {
+            buttonHTML = `<button class="btn btn-secondary" style="margin-top:10px;" disabled title="Du bist nicht am Pick oder nicht eingeloggt">🔒 Am Pick: ${state.players[currentPIndex] || '-'}</button>`;
+          }
+        }
+
+        card.innerHTML = `
+          ${imgHTML}
+          <strong>${team.name}</strong><br>
+          <div style="margin: 8px 0;">${badge}</div>
+          <small style="color: var(--text-muted);">In Kadern von: ${ownerNames || 'Niemandem'}</small>
+          ${buttonHTML}
+        `;
+        grid.appendChild(card);
+      });
+
+      const rosters = document.getElementById('drafted-rosters');
+      if (rosters) {
+        rosters.innerHTML = '';
+        state.players.forEach((pName, pIdx) => {
+          const myTeams = state.teams.filter(t => t.owners.includes(pIdx)).map(t => t.name).join('<br>');
+          rosters.innerHTML += `
+            <div style="background: var(--bg-card); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);">
+              <strong>${pName}</strong> (${state.teams.filter(t => t.owners.includes(pIdx)).length}/4 Teams):<br>
+              <small style="color: var(--accent-yellow);">${myTeams || '<i>Noch keine Teams</i>'}</small>
+            </div>
+          `;
+        });
+      }
+    }
+
+    function draftTeam(teamIndex) {
+      if (state.draftTurnIndex >= DRAFT_ORDER.length) return;
+      const currentPIndex = DRAFT_ORDER[state.draftTurnIndex];
+
+      if (!currentAuth || (currentAuth.type !== 'admin' && currentAuth.index !== currentPIndex)) {
+        return alert(`Nur ${state.players[currentPIndex]} kann aktuell wählen! Bitte logge dich als ${state.players[currentPIndex]} ein.`);
+      }
+
+      const team = state.teams[teamIndex];
+      if (team.owners.includes(currentPIndex)) return alert("Du hast dieses Team bereits in deinem Kader!");
+
+      team.owners.push(currentPIndex);
+      state.draftTurnIndex++;
+      logDebug(`Team gedraftet: "${team.name}" (Runde ${state.draftTurnIndex})`);
+      saveData();
+    }
+
+    function undoLastPick() {
+      if (state.draftTurnIndex === 0) return alert("Es wurde noch kein Pick gemacht!");
+      state.draftTurnIndex--;
+      const lastPIndex = DRAFT_ORDER[state.draftTurnIndex];
+      let removedTeam = "";
+      for (let t of state.teams) {
+        const idx = t.owners.lastIndexOf(lastPIndex);
+        if (idx !== -1) { 
+          t.owners.splice(idx, 1); 
+          removedTeam = t.name;
+          break; 
+        }
+      }
+      logDebug(`Draft Pick rückgängig gemacht: "${removedTeam}"`);
+      saveData();
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('log-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (state.logs.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Noch keine Punkte verbucht.</p>';
+        return;
+      }
+
+      const isAdmin = currentAuth && currentAuth.type === 'admin';
+
+      [...state.logs].reverse().forEach(log => {
+        const team = state.teams.find(t => t.id === log.teamId);
+        
+        const epBadge = log.episode ? `<span class="badge badge-ep" style="margin-right: 6px;">Folge ${log.episode}</span>` : '';
+        const dateFormatted = log.date ? new Date(log.date).toLocaleDateString('de-DE') : '';
+        const dateStr = dateFormatted ? `<small style="color: var(--text-muted); margin-left: 8px;">📅 ${dateFormatted}</small>` : '';
+
+        // Anzeige welche Fantasy-Spielerin(nen) dieses Team gedraftet haben
+        const ownerNames = (team && team.owners && team.owners.length > 0)
+          ? team.owners.map(pIdx => state.players[pIdx] || `Spielerin ${pIdx + 1}`).join(', ')
+          : 'Kein Kader';
+        
+        const ownersBadge = `<span style="color: var(--accent-cyan); font-weight: 600; font-size: 0.85rem; margin-left: 8px;">👥 ${ownerNames}</span>`;
+
+        container.innerHTML += `
+          <div class="log-item">
+            <div>
+              <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
+                ${epBadge}
+                <strong>${team ? team.name : 'Unbekannt'}</strong>
+                ${ownersBadge}
+                ${dateStr}
+              </div>
+              <span>${log.eventName}</span>
+              ${log.note ? `<br><small style="color: var(--text-muted);">${log.note}</small>` : ''}
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <strong style="color: ${log.points >= 0 ? '#28a745' : '#dc3545'}; font-size: 1.1rem;">
+                ${log.points >= 0 ? '+' : ''}${log.points} Pts
+              </strong>
+              ${isAdmin ? `<button class="btn btn-danger" style="width: auto; padding: 4px 8px;" onclick="deleteLog('${log.id}')">🗑️</button>` : ''}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function renderDebugConsole() {
+      const consoleBox = document.getElementById('console-output');
+      if (!consoleBox) return;
+
+      consoleBox.innerHTML = '';
+
+      if (!state.debugLogs || state.debugLogs.length === 0) {
+        consoleBox.innerHTML = '<div class="console-line" style="color: #555;">> System initialisiert. Warten auf Aktionen...</div>';
+        return;
+      }
+
+      [...state.debugLogs].reverse().forEach(entry => {
+        consoleBox.innerHTML += `
+          <div class="console-line">
+            <span class="console-time">[${entry.time}]</span> 
+            <span class="console-user">[${entry.user}]</span>: 
+            <span class="console-action">${entry.action}</span>
+          </div>
+        `;
+      });
+    }
+
+    function deleteLog(logId) {
+      if (!currentAuth || currentAuth.type !== 'admin') return alert("Nur Admins dürfen Logs löschen!");
+      const targetLog = state.logs.find(l => l.id === logId);
+      state.logs = state.logs.filter(l => l.id !== logId);
+      logDebug(`Punkte-Eintrag gelöscht (${targetLog ? targetLog.points + ' Pts' : 'ID ' + logId})`);
+      saveData();
+    }
+
+    function renderAdmin() {
+      const lockedNotice = document.getElementById('admin-locked-notice');
+      const adminContent = document.getElementById('admin-content');
+      if (!lockedNotice || !adminContent) return;
+
+      if (!currentAuth || currentAuth.type !== 'admin') {
+        lockedNotice.style.display = 'block';
+        adminContent.style.display = 'none';
+        return;
+      }
+
+      lockedNotice.style.display = 'none';
+      adminContent.style.display = 'grid';
+
+      const dateInput = document.getElementById('admin-date');
+      if (dateInput && !dateInput.value) {
+        dateInput.valueAsDate = new Date();
+      }
+
+      const pInputs = document.getElementById('player-inputs');
+      if (pInputs) {
+        pInputs.innerHTML = '';
+        state.players.forEach((name, idx) => {
+          pInputs.innerHTML += `
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+              <input type="text" id="p-input-${idx}" value="${name}" placeholder="Name">
+              <input type="text" id="p-pin-${idx}" value="${state.pins[idx] || '1234'}" placeholder="PIN" style="width: 90px;">
+            </div>
+          `;
+        });
+      }
+
+      const tSelect = document.getElementById('admin-team-select');
+      const scoreSelect = document.getElementById('admin-score-team');
+      if (tSelect && scoreSelect) {
+        tSelect.innerHTML = ''; scoreSelect.innerHTML = '';
+        state.teams.forEach((t, idx) => {
+          tSelect.innerHTML += `<option value="${idx}">${t.name}</option>`;
+          scoreSelect.innerHTML += `<option value="${t.id}">${t.name} (${getTeamPoints(t.id)} Pts)</option>`;
+        });
+        loadTeamNameForEdit();
+      }
+    }
+
+    function savePlayerSettings() {
+      state.players = state.players.map((_, idx) => {
+        const inp = document.getElementById(`p-input-${idx}`);
+        return (inp && inp.value.trim()) ? inp.value.trim() : `Spielerin ${idx + 1}`;
+      });
+      state.pins = state.players.map((_, idx) => {
+        const pinInp = document.getElementById(`p-pin-${idx}`);
+        return (pinInp && pinInp.value.trim()) ? pinInp.value.trim() : `1234`;
+      });
+      logDebug("Spielerinnen-Namen & PINs aktualisiert");
+      saveData();
+      alert("Spielerinnen und PINs gespeichert!");
+    }
+
+    function loadTeamNameForEdit() {
+      const sel = document.getElementById('admin-team-select');
+      if (!sel) return;
+      const idx = sel.value;
+      if (state.teams[idx]) {
+        document.getElementById('admin-team-name').value = state.teams[idx].name;
+        document.getElementById('admin-team-img-url').value = state.teams[idx].imgUrl || '';
+        previewImageInput();
+      }
+    }
+
+    function previewImageInput() {
+      const url = document.getElementById('admin-team-img-url').value;
+      const previewBox = document.getElementById('admin-img-preview');
+      const previewTag = document.getElementById('admin-img-preview-tag');
+      if (url && previewBox && previewTag) {
+        previewTag.src = url;
+        previewBox.style.display = 'block';
+      } else if (previewBox) {
+        previewBox.style.display = 'none';
+      }
+    }
+
+    function convertImageToBase64(fileInput) {
+      const file = fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('admin-team-img-url').value = e.target.result;
+          previewImageInput();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function updateTeamName() {
+      const idx = document.getElementById('admin-team-select').value;
+      const newName = document.getElementById('admin-team-name').value;
+      const newImg = document.getElementById('admin-team-img-url').value;
+
+      if (newName && state.teams[idx]) { 
+        state.teams[idx].name = newName; 
+        state.teams[idx].imgUrl = newImg;
+        logDebug(`Team-Slot ${parseInt(idx) + 1} umbenannt in "${newName}"`);
+        saveData(); 
+        alert("Team Details gespeichert!"); 
+      }
+    }
+
+    function applyEventPreset() {
+      const val = document.getElementById('admin-event-preset').value;
+      if (val !== 'custom') document.getElementById('admin-points').value = val;
+    }
+
+    function addPointEvent() {
+      const teamId = parseInt(document.getElementById('admin-score-team').value, 10);
+      const points = parseInt(document.getElementById('admin-points').value, 10);
+      const episode = document.getElementById('admin-episode').value;
+      const date = document.getElementById('admin-date').value;
+      
+      const presetSelect = document.getElementById('admin-event-preset');
+      const eventName = presetSelect.options[presetSelect.selectedIndex].text;
+      const note = document.getElementById('admin-note').value;
+
+      if (!isNaN(teamId) && !isNaN(points)) {
+        const team = state.teams.find(t => t.id === teamId);
+        state.logs.push({ 
+          id: Date.now().toString(), 
+          timestamp: new Date().toISOString(), 
+          teamId, 
+          eventName, 
+          points, 
+          note,
+          episode,
+          date
+        });
+        
+        document.getElementById('admin-note').value = '';
+        
+        const epLogStr = episode ? ` (Folge ${episode})` : '';
+        logDebug(`Punkte verbucht: ${points >= 0 ? '+' : ''}${points} Pts für "${team ? team.name : 'Team ' + teamId}"${epLogStr}`);
+        saveData();
+        alert("Punkte verbucht!");
+      }
+    }
+
+    function resetData() {
+      if (confirm("Wirklich alle Daten zurücksetzen?")) {
+        logDebug("⚠️ Gesamte Liga auf Werkseinstellungen zurückgesetzt");
+        localStorage.removeItem('rampensau_app_state');
+        sessionStorage.removeItem('rampensau_auth');
+        location.reload();
+      }
+    }
+
+    // Erstes Rendering & Cloud-Abruf beim Laden
+    render();
+    fetchFromCloud();
+  </script>
+</body>
+</html>
