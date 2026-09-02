@@ -241,6 +241,32 @@
       border-bottom: 1px solid var(--border);
     }
 
+    /* CONSOLE STYLE STYLING */
+    .console-box {
+      background-color: #050805;
+      color: #00ff66;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #1a3820;
+      height: 420px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    }
+
+    .console-line {
+      margin-bottom: 6px;
+      border-bottom: 1px solid #0d1f11;
+      padding-bottom: 4px;
+      word-break: break-all;
+    }
+
+    .console-time { color: #00b3ff; }
+    .console-user { color: #ffea00; font-weight: bold; }
+    .console-action { color: #e1e6e2; }
+
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.85);
@@ -276,6 +302,7 @@
       <button class="tab-btn active" onclick="switchTab('panel')">🏆 Leaderboard</button>
       <button class="tab-btn" onclick="switchTab('draft')">🎯 Draft Phase</button>
       <button class="tab-btn" onclick="switchTab('logs')">📝 Event-Log</button>
+      <button class="tab-btn" onclick="switchTab('debug')">🖥️ Console-Log</button>
       <button class="tab-btn" onclick="switchTab('admin')">⚙️ Admin & Setup</button>
       <button class="tab-btn" onclick="switchTab('sync')">☁️ Cloud-Sync</button>
     </div>
@@ -329,7 +356,16 @@
       </div>
     </div>
 
-    <!-- 4. ADMIN & SETUP -->
+    <!-- 4. DEBUG / CONSOLE LOG -->
+    <div id="debug" class="tab-content">
+      <h2>🖥️ System & Action Console</h2>
+      <p style="color: var(--text-muted)">Echtzeit-Protokoll aller Aktivitäten in der App (für alle Teilnehmerinnen transparent einsehbar):</p>
+      <div class="card">
+        <div class="console-box" id="console-output"></div>
+      </div>
+    </div>
+
+    <!-- 5. ADMIN & SETUP -->
     <div id="admin" class="tab-content">
       <h2>Admin & League Setup</h2>
       <div id="admin-locked-notice" style="display: block; background: var(--bg-card); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--danger);">
@@ -403,7 +439,7 @@
       </div>
     </div>
 
-    <!-- 5. CLOUD-SYNC -->
+    <!-- 6. CLOUD-SYNC -->
     <div id="sync" class="tab-content">
       <h2>☁️ Live-Cloud-Sync</h2>
       <div class="card" style="max-width: 650px;">
@@ -478,8 +514,11 @@
       adminPin: "admin123",
       teams: DEFAULT_TEAMS,
       draftTurnIndex: 0,
-      logs: []
+      logs: [],
+      debugLogs: []
     };
+
+    if (!state.debugLogs) state.debugLogs = [];
 
     let currentAuth = JSON.parse(sessionStorage.getItem('rampensau_auth')) || null;
     
@@ -490,6 +529,30 @@
 
     if (!cloudConfig.binId) cloudConfig.binId = HARDCODED_BIN_ID;
     if (!cloudConfig.masterKey) cloudConfig.masterKey = HARDCODED_MASTER_KEY;
+
+    function getCurrentUserName() {
+      if (!currentAuth) return "Gast";
+      if (currentAuth.type === 'admin') return "👑 Admin";
+      if (currentAuth.type === 'player') return state.players[currentAuth.index] || `Spielerin ${currentAuth.index + 1}`;
+      return "Gast";
+    }
+
+    function logDebug(actionText) {
+      if (!state.debugLogs) state.debugLogs = [];
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      state.debugLogs.push({
+        time: timeStr,
+        user: getCurrentUserName(),
+        action: actionText
+      });
+
+      // Max. 100 Logs aufbewahren
+      if (state.debugLogs.length > 100) {
+        state.debugLogs.shift();
+      }
+    }
 
     async function saveData() {
       localStorage.setItem('rampensau_app_state', JSON.stringify(state));
@@ -512,6 +575,7 @@
           state = data.record;
           if (!state.pins) state.pins = DEFAULT_PINS;
           if (!state.adminPin) state.adminPin = "admin123";
+          if (!state.debugLogs) state.debugLogs = [];
           localStorage.setItem('rampensau_app_state', JSON.stringify(state));
           render();
           document.getElementById('sync-status').innerText = "🟢 Cloud Live";
@@ -546,6 +610,7 @@
       cloudConfig.masterKey = document.getElementById('cfg-master-key').value.trim();
       localStorage.setItem('rampensau_cloud_config', JSON.stringify(cloudConfig));
       updateShareLink();
+      logDebug("Cloud-API Daten geändert");
       pushToCloud();
       alert("Cloud-Konfiguration gespeichert!");
     }
@@ -600,8 +665,9 @@
         if (pin === state.adminPin) {
           currentAuth = { type: 'admin' };
           sessionStorage.setItem('rampensau_auth', JSON.stringify(currentAuth));
+          logDebug("Admin-Login erfolgreich");
           closeLoginModal();
-          render();
+          saveData();
           alert("Erfolgreich als Admin eingeloggt!");
         } else {
           alert("Falsches Admin-Passwort!");
@@ -611,8 +677,9 @@
         if (pin === state.pins[pIdx]) {
           currentAuth = { type: 'player', index: pIdx };
           sessionStorage.setItem('rampensau_auth', JSON.stringify(currentAuth));
+          logDebug(`Login erfolgreich (${state.players[pIdx]})`);
           closeLoginModal();
-          render();
+          saveData();
           alert(`Eingeloggt als ${state.players[pIdx]}`);
         } else {
           alert("Falscher PIN für diese Spielerin!");
@@ -621,9 +688,10 @@
     }
 
     function logout() {
+      logDebug("Logout durchgeführt");
       currentAuth = null;
       sessionStorage.removeItem('rampensau_auth');
-      render();
+      saveData();
     }
 
     function getTeamPoints(teamId) {
@@ -653,6 +721,7 @@
       renderLeaderboard();
       renderDraft();
       renderLogs();
+      renderDebugConsole();
       renderAdmin();
       
       document.getElementById('cfg-bin-id').value = cloudConfig.binId || '';
@@ -767,6 +836,7 @@
 
       team.owners.push(currentPIndex);
       state.draftTurnIndex++;
+      logDebug(`Team gedraftet: "${team.name}" (Runde ${state.draftTurnIndex})`);
       saveData();
     }
 
@@ -774,10 +844,16 @@
       if (state.draftTurnIndex === 0) return alert("Es wurde noch kein Pick gemacht!");
       state.draftTurnIndex--;
       const lastPIndex = DRAFT_ORDER[state.draftTurnIndex];
+      let removedTeam = "";
       for (let t of state.teams) {
         const idx = t.owners.lastIndexOf(lastPIndex);
-        if (idx !== -1) { t.owners.splice(idx, 1); break; }
+        if (idx !== -1) { 
+          t.owners.splice(idx, 1); 
+          removedTeam = t.name;
+          break; 
+        }
       }
+      logDebug(`Draft Pick rückgängig gemacht: "${removedTeam}"`);
       saveData();
     }
 
@@ -811,9 +887,33 @@
       });
     }
 
+    function renderDebugConsole() {
+      const consoleBox = document.getElementById('console-output');
+      if (!consoleBox) return;
+
+      consoleBox.innerHTML = '';
+
+      if (!state.debugLogs || state.debugLogs.length === 0) {
+        consoleBox.innerHTML = '<div class="console-line" style="color: #555;">> System initialisiert. Warten auf Aktionen...</div>';
+        return;
+      }
+
+      [...state.debugLogs].reverse().forEach(entry => {
+        consoleBox.innerHTML += `
+          <div class="console-line">
+            <span class="console-time">[${entry.time}]</span> 
+            <span class="console-user">[${entry.user}]</span>: 
+            <span class="console-action">${entry.action}</span>
+          </div>
+        `;
+      });
+    }
+
     function deleteLog(logId) {
       if (!currentAuth || currentAuth.type !== 'admin') return alert("Nur Admins dürfen Logs löschen!");
+      const targetLog = state.logs.find(l => l.id === logId);
       state.logs = state.logs.filter(l => l.id !== logId);
+      logDebug(`Punkte-Eintrag gelöscht (${targetLog ? targetLog.points + ' Pts' : 'ID ' + logId})`);
       saveData();
     }
 
@@ -856,6 +956,7 @@
     function savePlayerSettings() {
       state.players = state.players.map((_, idx) => document.getElementById(`p-input-${idx}`).value || `Spielerin ${idx + 1}`);
       state.pins = state.players.map((_, idx) => document.getElementById(`p-pin-${idx}`).value || `1234`);
+      logDebug("Spielerinnen-Namen & PINs aktualisiert");
       saveData();
       alert("Spielerinnen und PINs gespeichert!");
     }
@@ -901,6 +1002,7 @@
       if (newName && state.teams[idx]) { 
         state.teams[idx].name = newName; 
         state.teams[idx].imgUrl = newImg;
+        logDebug(`Team-Slot ${parseInt(idx) + 1} umbenannt in "${newName}"`);
         saveData(); 
         alert("Team Details gespeichert!"); 
       }
@@ -919,8 +1021,10 @@
       const note = document.getElementById('admin-note').value;
 
       if (!isNaN(teamId) && !isNaN(points)) {
+        const team = state.teams.find(t => t.id === teamId);
         state.logs.push({ id: Date.now().toString(), timestamp: new Date().toISOString(), teamId, eventName, points, note });
         document.getElementById('admin-note').value = '';
+        logDebug(`Punkte verbucht: ${points >= 0 ? '+' : ''}${points} Pts für "${team ? team.name : 'Team ' + teamId}" (${eventName})`);
         saveData();
         alert("Punkte verbucht!");
       }
@@ -928,6 +1032,7 @@
 
     function resetData() {
       if (confirm("Wirklich alle Daten zurücksetzen?")) {
+        logDebug("⚠️ Gesamte Liga auf Werkseinstellungen zurückgesetzt");
         localStorage.removeItem('rampensau_app_state');
         sessionStorage.removeItem('rampensau_auth');
         location.reload();
