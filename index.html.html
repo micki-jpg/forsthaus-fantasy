@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🦝 Forsthaus Rampensau - Fantasy League Cloud</title>
+  <style>
+    :root {
+      --bg-dark: #0e120f;
+      --bg-card: #171f19;
+      --bg-card-hover: #202b23;
+      --accent-pink: #e6007e;
+      --accent-yellow: #ffea00;
+      --accent-cyan: #00f0ff;
+      --text-main: #f2f5f3;
+      --text-muted: #95a398;
+      --border: #29382c;
+      --success: #28a745;
+      --danger: #dc3545;
+    }
+
+    * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: radial-gradient(circle at center, #2b0318 0%, #0e120f 100%);
+      border-bottom: 3px solid var(--accent-pink);
+      padding: 25px 20px 15px 20px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(230, 0, 126, 0.25);
+    }
+
+    .header-logo {
+      max-height: 85px;
+      max-width: 90%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 10px rgba(230, 0, 126, 0.6));
+    }
+
+    .header-subtitle {
+      margin: 8px 0 0 0;
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: var(--accent-yellow);
+      text-transform: uppercase;
+    }
+
+    .status-bar {
+      background: #121813;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .user-login-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-card);
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+      width: 100%;
+      flex: 1;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 12px 20px;
+      cursor: pointer;
+      border-radius: 8px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover { background: var(--bg-card-hover); color: var(--text-main); }
+    .tab-btn.active {
+      background: var(--accent-pink);
+      color: white;
+      border-color: var(--accent-pink);
+      box-shadow: 0 0 14px rgba(230, 0, 126, 0.5);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .grid-admin { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+
+    @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .team-card-img {
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .team-img-placeholder {
+      width: 100%;
+      height: 90px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+
+    .mini-team-thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid var(--accent-pink);
+      flex-shrink: 0;
+    }
+
+    .leaderboard-team-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-green { background: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid #28a745; }
+    .badge-red { background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
+
+    .btn {
+      background: var(--accent-pink);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      width: 100%;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary { background: #2f3e33; color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.9rem; }
+    select, input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0a0d0a;
+      border: 1px solid var(--border);
+      color: white;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background-color: #111712; color: var(--accent-yellow); font-size: 0.85rem; text-transform: uppercase; }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      font-weight: bold;
+    }
+    .rank-1 { background: var(--accent-yellow); color: #000; box-shadow: 0 0 10px rgba(255,234,0,0.5); }
+    .rank-2 { background: #c0c0c0; color: #000; }
+    .rank-3 { background: #cd7f32; color: #000; }
+
+    .log-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: none; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-card {
+      background: var(--bg-card); border: 1px solid var(--accent-pink);
+      padding: 25px; border-radius: 12px; width: 90%; max-width: 400px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://upload.wikimedia.org/wikipedia/de/b/b5/Forsthaus_Rampensau_Logo.png" alt="Forsthaus Rampensau Logo" class="header-logo">
+    <div class="header-subtitle">Fantasy League</div>
+  </header>
+
+  <div class="status-bar">
+    <div class="user-login-badge">
+      <span>👤 Status: <strong id="active-user-name" style="color: var(--accent-yellow);">Nicht eingeloggt</strong></span>
+      <button class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 0.75rem;" onclick="openLoginModal()">Login / Wechseln</button>
+      <button id="logout-btn" class="btn btn-danger" style="width: auto; padding: 2px 8px; font-size: 0.75rem; display: none;" onclick="logout()">Logout</button>
+    </div>
+    <div>
+      <span id="sync-status" style="color: var(--accent-yellow);">🟡 Lokal-Modus</span>
+      <button class="btn btn-secondary" style="width: auto; padding: 4px 10px; font-size: 0.8rem; margin-left: 8px;" onclick="fetchFromCloud()">🔄 Aktualisieren</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('panel')">🏆 Leaderboard</button>
+      <button class="tab-btn" onclick="switchTab('draft')">🎯 Draft Phase</button>
+      <button class="tab-btn" onclick="switchTab('logs')">📝 Event-Log</button>
+      <button class="tab-btn" onclick="switchTab('admin')">⚙️ Admin & Setup</button>
+      <button class="tab-btn" onclick="switchTab('sync')">☁️ Cloud-Sync</button>
+    </div>
+
+    <!-- 1. LEADERBOARD -->
+    <div id="panel" class="tab-content active">
+      <h2>Aktuelle Liga-Rangliste</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Rang</th>
+            <th>Spielerin</th>
+            <th>Gedraftete Teams</th>
+            <th>Punkte</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </div>
+
+    <!-- 2. DRAFT PHASE -->
+    <div id="draft" class="tab-content">
+      <h2>Draft Phase (4 Runden Snake Draft)</h2>
+      <p style="color: var(--text-muted)">Du kannst nur Teams wählen, wenn du als die <strong>aktuell fällige Spielerin</strong> eingeloggt bist.</p>
+      
+      <div style="background: var(--bg-card); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <span>Aktuell am Pick: </span>
+          <strong id="current-drafter" style="color: var(--accent-yellow); font-size: 1.2rem;">-</strong>
+        </div>
+        <button id="undo-btn" class="btn btn-secondary" style="width: auto;" onclick="undoLastPick()">↩️ Letzten Pick rückgängig machen</button>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <h3>Verfügbare Forsthaus-Teams</h3>
+          <div id="team-draft-grid" class="team-grid"></div>
+        </div>
+        <div>
+          <h3>Fantasy-Kader (Ziel: 4 Teams)</h3>
+          <div id="drafted-rosters"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. EVENT LOG -->
+    <div id="logs" class="tab-content">
+      <h2>Verlauf aller vergebenen Punkte</h2>
+      <div class="card">
+        <div id="log-list"></div>
+      </div>
+    </div>
+
+    <!-- 4. ADMIN & SETUP -->
+    <div id="admin" class="tab-content">
+      <h2>Admin & League Setup</h2>
+      <div id="admin-locked-notice" style="display: block; background: var(--bg-card); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--danger);">
+        🔒 <strong>Admin-Bereich geschützt:</strong> Bitte logge dich als Admin mit deinem Admin-PIN ein, um Einstellungen zu verändern.
+        <br><br>
+        <button class="btn btn-secondary" style="width: auto;" onclick="openLoginModal('admin')">🔑 Als Admin einloggen</button>
+      </div>
+
+      <div id="admin-content" class="grid-admin" style="display: none;">
+        
+        <div class="card">
+          <h3>1. Fantasy-Spielerinnen & PINs</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">Vergib individuelle Passwörter/PINs für die 4 Spielerinnen.</p>
+          <div id="player-inputs"></div>
+          <button class="btn" onclick="savePlayerSettings()">Zugänge Speichern</button>
+        </div>
+
+        <div class="card">
+          <h3>2. Teams enthüllen & Bild hinzufügen</h3>
+          <div class="form-group">
+            <label>Team-Slot auswählen</label>
+            <select id="admin-team-select" onchange="loadTeamNameForEdit()"></select>
+          </div>
+          <div class="form-group">
+            <label>Name / Besetzung des Teams</label>
+            <input type="text" id="admin-team-name" placeholder="z.B. Tara Tabitha & Catrin Heyne">
+          </div>
+          
+          <div class="form-group">
+            <label>Team-Bild (URL oder Upload)</label>
+            <input type="text" id="admin-team-img-url" placeholder="https://beispiel.de/bild.jpg" oninput="previewImageInput()">
+            <input type="file" id="admin-team-img-file" accept="image/*" style="margin-top: 6px;" onchange="convertImageToBase64(this)">
+          </div>
+
+          <div id="admin-img-preview" style="margin-bottom: 12px; display: none; text-align: center;">
+            <img id="admin-img-preview-tag" src="" style="max-height: 120px; border-radius: 8px; border: 1px solid var(--accent-pink);">
+          </div>
+
+          <button class="btn" onclick="updateTeamName()">Team Details Speichern</button>
+        </div>
+
+        <div class="card">
+          <h3>3. Punkte nach Session eintragen</h3>
+          <div class="form-group">
+            <label>Forsthaus-Team</label>
+            <select id="admin-score-team"></select>
+          </div>
+          <div class="form-group">
+            <label>Ereignis-Vorlage</label>
+            <select id="admin-event-preset" onchange="applyEventPreset()">
+              <option value="15">🏆 Staffelsieg (+15)</option>
+              <option value="10">🛡️ Safe-Game gewonnen (+10)</option>
+              <option value="5">✅ Folge überstanden (+5)</option>
+              <option value="5">🔥 Drama / Streit / Eklat (+5)</option>
+              <option value="5">😭 Tränen / Emotionen (+5)</option>
+              <option value="-3">🗳️ Erhaltene Nominierungsstimme (-3)</option>
+              <option value="-15">❌ Rauswurf / Auszug (-15)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Punktewert</label>
+            <input type="number" id="admin-points" value="15">
+          </div>
+          <div class="form-group">
+            <label>Notiz / Beschreibung</label>
+            <input type="text" id="admin-note" placeholder="z. B. Folge 2: Streit beim Kochen">
+          </div>
+          <button class="btn btn-success" onclick="addPointEvent()">Punkte verbuchen</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 5. CLOUD-SYNC -->
+    <div id="sync" class="tab-content">
+      <h2>☁️ JSONBin.io Live-Cloud-Sync</h2>
+      <div class="card" style="max-width: 650px;">
+        <h3>API-Zugangsdaten (Admin)</h3>
+        <p style="color: var(--text-muted)">Trage hier deine Daten von JSONBin.io ein, um den Spielstand live für alle zu synchronisieren.</p>
+        
+        <div class="form-group">
+          <label>JSONBin Bin ID</label>
+          <input type="text" id="cfg-bin-id" placeholder="z.B. 65a123456789...">
+        </div>
+        
+        <div class="form-group">
+          <label>JSONBin Master Key (Nur für Admin zum Schreiben)</label>
+          <input type="password" id="cfg-master-key" placeholder="$2a$10$...">
+        </div>
+
+        <button class="btn btn-success" onclick="saveCloudConfig()">💾 Cloud-Anbindung Speichern</button>
+
+        <h3 style="margin-top: 30px;">🔗 Link für Freunde teilen</h3>
+        <div class="form-group">
+          <input type="text" id="share-link-input" readonly>
+        </div>
+        <button class="btn btn-secondary" onclick="copyShareLink()">📋 Link Kopieren</button>
+
+        <h3 style="margin-top: 30px; color: var(--danger);">Gefahrenzone</h3>
+        <button class="btn btn-danger" onclick="resetData()">⚠️ Gesamte Liga lokal zurücksetzen</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div id="login-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 style="margin-top:0;">🔑 Login / Spielerin wählen</h3>
+      <div class="form-group">
+        <label>Rolle / Name</label>
+        <select id="login-user-select"></select>
+      </div>
+      <div class="form-group">
+        <label>PIN / Passwort</label>
+        <input type="password" id="login-pin-input" placeholder="z. B. 1234">
+      </div>
+      <button class="btn" onclick="submitLogin()">Einloggen</button>
+      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="closeLoginModal()">Abbrechen</button>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_PLAYERS = ["Spielerin 1", "Spielerin 2", "Spielerin 3", "Spielerin 4"];
+    const DEFAULT_PINS = ["1111", "2222", "3333", "4444"];
+    const DEFAULT_TEAMS = Array.from({ length: 9 }, (_, i) => ({
+      id: i + 1,
+      name: `Team Slot ${i + 1} (Geheim)`,
+      imgUrl: '',
+      owners: []
+    }));
+
+    // Snake Draft für 4 Spielerinnen über 4 Runden (16 Picks)
+    const DRAFT_ORDER = [
+      0, 1, 2, 3, // Runde 1
+      3, 2, 1, 0, // Runde 2
+      0, 1, 2, 3, // Runde 3
+      3, 2, 1, 0  // Runde 4
+    ];
+
+    let state = JSON.parse(localStorage.getItem('rampensau_app_state')) || {
+      players: DEFAULT_PLAYERS,
+      pins: DEFAULT_PINS,
+      adminPin: "admin123",
+      teams: DEFAULT_TEAMS,
+      draftTurnIndex: 0,
+      logs: []
+    };
+
+    let currentAuth = JSON.parse(sessionStorage.getItem('rampensau_auth')) || null;
+    let cloudConfig = JSON.parse(localStorage.getItem('rampensau_cloud_config')) || { binId: "", masterKey: "" };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('bin')) cloudConfig.binId = urlParams.get('bin');
+
+    async function saveData() {
+      localStorage.setItem('rampensau_app_state', JSON.stringify(state));
+      render();
+      if (cloudConfig.binId && cloudConfig.masterKey) await pushToCloud();
+    }
+
+    async function fetchFromCloud() {
+      if (!cloudConfig.binId) return;
+      document.getElementById('sync-status').innerText = "🔄 Lade Cloud Daten...";
+      try {
+        const headers = {};
+        if (cloudConfig.masterKey) headers['X-Master-Key'] = cloudConfig.masterKey;
+
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudConfig.binId}/latest`, { headers });
+        if (!res.ok) throw new Error("Fehler beim Abrufen");
+        const data = await res.json();
+        
+        if (data.record && data.record.players) {
+          state = data.record;
+          if (!state.pins) state.pins = DEFAULT_PINS;
+          if (!state.adminPin) state.adminPin = "admin123";
+          localStorage.setItem('rampensau_app_state', JSON.stringify(state));
+          render();
+          document.getElementById('sync-status').innerText = "🟢 Cloud-Sync Aktiv";
+          document.getElementById('sync-status').style.color = "var(--success)";
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('sync-status').innerText = "🔴 Cloud Fehler";
+        document.getElementById('sync-status').style.color = "var(--danger)";
+      }
+    }
+
+    async function pushToCloud() {
+      if (!cloudConfig.binId || !cloudConfig.masterKey) return;
+      document.getElementById('sync-status').innerText = "⏳ Speichere...";
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudConfig.binId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': cloudConfig.masterKey },
+          body: JSON.stringify(state)
+        });
+        if (!res.ok) throw new Error("Fehler beim Speichern");
+        document.getElementById('sync-status').innerText = "🟢 Cloud Live";
+        document.getElementById('sync-status').style.color = "var(--success)";
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function saveCloudConfig() {
+      cloudConfig.binId = document.getElementById('cfg-bin-id').value.trim();
+      cloudConfig.masterKey = document.getElementById('cfg-master-key').value.trim();
+      localStorage.setItem('rampensau_cloud_config', JSON.stringify(cloudConfig));
+      updateShareLink();
+      pushToCloud();
+      alert("Cloud-Konfiguration gespeichert!");
+    }
+
+    function updateShareLink() {
+      if (cloudConfig.binId) {
+        const baseUrl = window.location.origin + window.location.pathname;
+        document.getElementById('share-link-input').value = `${baseUrl}?bin=${cloudConfig.binId}`;
+      }
+    }
+
+    function copyShareLink() {
+      const linkInput = document.getElementById('share-link-input');
+      if (linkInput.value) {
+        navigator.clipboard.writeText(linkInput.value);
+        alert("Link in Zwischenablage kopiert!");
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tabId).classList.add('active');
+      if (event && event.target) event.target.classList.add('active');
+      render();
+    }
+
+    /* AUTH LOGIC */
+    function openLoginModal(targetRole = null) {
+      const sel = document.getElementById('login-user-select');
+      sel.innerHTML = '';
+      
+      state.players.forEach((p, idx) => {
+        sel.innerHTML += `<option value="player-${idx}">${p}</option>`;
+      });
+      sel.innerHTML += `<option value="admin">👑 Admin</option>`;
+
+      if (targetRole === 'admin') sel.value = 'admin';
+
+      document.getElementById('login-pin-input').value = '';
+      document.getElementById('login-modal').style.display = 'flex';
+    }
+
+    function closeLoginModal() {
+      document.getElementById('login-modal').style.display = 'none';
+    }
+
+    function submitLogin() {
+      const val = document.getElementById('login-user-select').value;
+      const pin = document.getElementById('login-pin-input').value.trim();
+
+      if (val === 'admin') {
+        if (pin === state.adminPin) {
+          currentAuth = { type: 'admin' };
+          sessionStorage.setItem('rampensau_auth', JSON.stringify(currentAuth));
+          closeLoginModal();
+          render();
+          alert("Erfolgreich als Admin eingeloggt!");
+        } else {
+          alert("Falsches Admin-Passwort!");
+        }
+      } else if (val.startsWith('player-')) {
+        const pIdx = parseInt(val.replace('player-', ''), 10);
+        if (pin === state.pins[pIdx]) {
+          currentAuth = { type: 'player', index: pIdx };
+          sessionStorage.setItem('rampensau_auth', JSON.stringify(currentAuth));
+          closeLoginModal();
+          render();
+          alert(`Eingeloggt als ${state.players[pIdx]}`);
+        } else {
+          alert("Falscher PIN für diese Spielerin!");
+        }
+      }
+    }
+
+    function logout() {
+      currentAuth = null;
+      sessionStorage.removeItem('rampensau_auth');
+      render();
+    }
+
+    function getTeamPoints(teamId) {
+      return state.logs.filter(l => l.teamId === teamId).reduce((sum, l) => sum + l.points, 0);
+    }
+
+    function getPlayerPoints(playerIndex) {
+      const myTeams = state.teams.filter(t => t.owners.includes(playerIndex));
+      return myTeams.reduce((sum, t) => sum + getTeamPoints(t.id), 0);
+    }
+
+    function render() {
+      const activeNameEl = document.getElementById('active-user-name');
+      const logoutBtn = document.getElementById('logout-btn');
+
+      if (!currentAuth) {
+        activeNameEl.innerText = "Nicht eingeloggt (Nur-Lese-Modus)";
+        logoutBtn.style.display = 'none';
+      } else if (currentAuth.type === 'admin') {
+        activeNameEl.innerText = "👑 Admin";
+        logoutBtn.style.display = 'inline-block';
+      } else if (currentAuth.type === 'player') {
+        activeNameEl.innerText = `🎮 ${state.players[currentAuth.index]}`;
+        logoutBtn.style.display = 'inline-block';
+      }
+
+      renderLeaderboard();
+      renderDraft();
+      renderLogs();
+      renderAdmin();
+      
+      document.getElementById('cfg-bin-id').value = cloudConfig.binId || '';
+      document.getElementById('cfg-master-key').value = cloudConfig.masterKey || '';
+      updateShareLink();
+    }
+
+    function renderLeaderboard() {
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = '';
+
+      const playerScores = state.players.map((name, index) => {
+        const myTeams = state.teams.filter(t => t.owners.includes(index));
+        const totalPoints = getPlayerPoints(index);
+        return { name, teams: myTeams, totalPoints };
+      });
+
+      playerScores.sort((a, b) => b.totalPoints - a.totalPoints);
+
+      playerScores.forEach((p, rank) => {
+        let rankClass = rank === 0 ? 'rank-1' : rank === 1 ? 'rank-2' : rank === 2 ? 'rank-3' : '';
+        const teamDetails = p.teams.map(t => {
+          const imgTag = t.imgUrl ? `<img src="${t.imgUrl}" class="mini-team-thumb">` : '';
+          return `
+            <div class="leaderboard-team-row">
+              ${imgTag}
+              <span>${t.name} (<strong style="color: var(--accent-yellow);">${getTeamPoints(t.id)} Pts</strong>)</span>
+            </div>
+          `;
+        }).join('');
+        
+        tbody.innerHTML += `
+          <tr>
+            <td><span class="rank-badge ${rankClass}">${rank + 1}</span></td>
+            <td><strong>${p.name}</strong></td>
+            <td>${teamDetails || '<i>Keine Teams gedraftet</i>'}</td>
+            <td><strong style="color: var(--accent-yellow); font-size: 1.3rem;">${p.totalPoints}</strong></td>
+          </tr>
+        `;
+      });
+    }
+
+    function renderDraft() {
+      const grid = document.getElementById('team-draft-grid');
+      grid.innerHTML = '';
+
+      const isFinished = state.draftTurnIndex >= DRAFT_ORDER.length;
+      const currentPIndex = isFinished ? null : DRAFT_ORDER[state.draftTurnIndex];
+      document.getElementById('current-drafter').innerText = isFinished ? "Draft Beendet!" : state.players[currentPIndex];
+
+      const canIUserPick = currentAuth && (currentAuth.type === 'admin' || (currentAuth.type === 'player' && currentAuth.index === currentPIndex));
+
+      document.getElementById('undo-btn').disabled = !(currentAuth && (currentAuth.type === 'admin' || (currentAuth.type === 'player' && currentAuth.index === currentPIndex)));
+
+      state.teams.forEach((team, index) => {
+        const alreadyInMyKader = currentPIndex !== null && team.owners.includes(currentPIndex);
+        let badge = alreadyInMyKader 
+          ? `<span class="badge badge-red">Bereits im Kader</span>` 
+          : `<span class="badge badge-green">Verfügbar</span>`;
+
+        const ownerNames = team.owners.map(pIdx => state.players[pIdx]).join(', ');
+        const imgHTML = team.imgUrl 
+          ? `<img src="${team.imgUrl}" class="team-card-img" alt="${team.name}">` 
+          : `<div class="team-img-placeholder">🦝 Kein Bild vorhanden</div>`;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.opacity = alreadyInMyKader ? '0.5' : '1';
+        
+        let buttonHTML = '';
+        if (!isFinished && !alreadyInMyKader) {
+          if (canIUserPick) {
+            buttonHTML = `<button class="btn" style="margin-top:10px;" onclick="draftTeam(${index})">Wählen</button>`;
+          } else {
+            buttonHTML = `<button class="btn btn-secondary" style="margin-top:10px;" disabled title="Du bist nicht am Pick oder nicht eingeloggt">🔒 Am Pick: ${state.players[currentPIndex]}</button>`;
+          }
+        }
+
+        card.innerHTML = `
+          ${imgHTML}
+          <strong>${team.name}</strong><br>
+          <div style="margin: 8px 0;">${badge}</div>
+          <small style="color: var(--text-muted);">In Kadern von: ${ownerNames || 'Niemandem'}</small>
+          ${buttonHTML}
+        `;
+        grid.appendChild(card);
+      });
+
+      const rosters = document.getElementById('drafted-rosters');
+      rosters.innerHTML = '';
+      state.players.forEach((pName, pIdx) => {
+        const myTeams = state.teams.filter(t => t.owners.includes(pIdx)).map(t => t.name).join('<br>');
+        rosters.innerHTML += `
+          <div style="background: var(--bg-card); padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);">
+            <strong>${pName}</strong> (${state.teams.filter(t => t.owners.includes(pIdx)).length}/4 Teams):<br>
+            <small style="color: var(--accent-yellow);">${myTeams || '<i>Noch keine Teams</i>'}</small>
+          </div>
+        `;
+      });
+    }
+
+    function draftTeam(teamIndex) {
+      if (state.draftTurnIndex >= DRAFT_ORDER.length) return;
+      const currentPIndex = DRAFT_ORDER[state.draftTurnIndex];
+
+      if (!currentAuth || (currentAuth.type !== 'admin' && currentAuth.index !== currentPIndex)) {
+        return alert(`Nur ${state.players[currentPIndex]} kann aktuell wählen! Bitte logge dich als ${state.players[currentPIndex]} ein.`);
+      }
+
+      const team = state.teams[teamIndex];
+      if (team.owners.includes(currentPIndex)) return alert("Du hast dieses Team bereits in deinem Kader!");
+
+      team.owners.push(currentPIndex);
+      state.draftTurnIndex++;
+      saveData();
+    }
+
+    function undoLastPick() {
+      if (state.draftTurnIndex === 0) return alert("Es wurde noch kein Pick gemacht!");
+      state.draftTurnIndex--;
+      const lastPIndex = DRAFT_ORDER[state.draftTurnIndex];
+      for (let t of state.teams) {
+        const idx = t.owners.lastIndexOf(lastPIndex);
+        if (idx !== -1) { t.owners.splice(idx, 1); break; }
+      }
+      saveData();
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('log-list');
+      container.innerHTML = '';
+
+      if (state.logs.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Noch keine Punkte verbucht.</p>';
+        return;
+      }
+
+      const isAdmin = currentAuth && currentAuth.type === 'admin';
+
+      [...state.logs].reverse().forEach(log => {
+        const team = state.teams.find(t => t.id === log.teamId);
+        container.innerHTML += `
+          <div class="log-item">
+            <div>
+              <strong>${team ? team.name : 'Unbekannt'}</strong> — <span>${log.eventName}</span>
+              ${log.note ? `<br><small style="color: var(--text-muted);">${log.note}</small>` : ''}
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <strong style="color: ${log.points >= 0 ? '#28a745' : '#dc3545'}; font-size: 1.1rem;">
+                ${log.points >= 0 ? '+' : ''}${log.points} Pts
+              </strong>
+              ${isAdmin ? `<button class="btn btn-danger" style="width: auto; padding: 4px 8px;" onclick="deleteLog('${log.id}')">🗑️</button>` : ''}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function deleteLog(logId) {
+      if (!currentAuth || currentAuth.type !== 'admin') return alert("Nur Admins dürfen Logs löschen!");
+      state.logs = state.logs.filter(l => l.id !== logId);
+      saveData();
+    }
+
+    function renderAdmin() {
+      const lockedNotice = document.getElementById('admin-locked-notice');
+      const adminContent = document.getElementById('admin-content');
+
+      if (!currentAuth || currentAuth.type !== 'admin') {
+        lockedNotice.style.display = 'block';
+        adminContent.style.display = 'none';
+        return;
+      }
+
+      lockedNotice.style.display = 'none';
+      adminContent.style.display = 'grid';
+
+      const pInputs = document.getElementById('player-inputs');
+      pInputs.innerHTML = '';
+      state.players.forEach((name, idx) => {
+        pInputs.innerHTML += `
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="p-input-${idx}" value="${name}" placeholder="Name">
+            <input type="text" id="p-pin-${idx}" value="${state.pins[idx] || '1234'}" placeholder="PIN" style="width: 90px;">
+          </div>
+        `;
+      });
+
+      const tSelect = document.getElementById('admin-team-select');
+      const scoreSelect = document.getElementById('admin-score-team');
+      tSelect.innerHTML = ''; scoreSelect.innerHTML = '';
+
+      state.teams.forEach((t, idx) => {
+        tSelect.innerHTML += `<option value="${idx}">${t.name}</option>`;
+        scoreSelect.innerHTML += `<option value="${t.id}">${t.name} (${getTeamPoints(t.id)} Pts)</option>`;
+      });
+
+      loadTeamNameForEdit();
+    }
+
+    function savePlayerSettings() {
+      state.players = state.players.map((_, idx) => document.getElementById(`p-input-${idx}`).value || `Spielerin ${idx + 1}`);
+      state.pins = state.players.map((_, idx) => document.getElementById(`p-pin-${idx}`).value || `1234`);
+      saveData();
+      alert("Spielerinnen und PINs gespeichert!");
+    }
+
+    function loadTeamNameForEdit() {
+      const idx = document.getElementById('admin-team-select').value;
+      if (state.teams[idx]) {
+        document.getElementById('admin-team-name').value = state.teams[idx].name;
+        document.getElementById('admin-team-img-url').value = state.teams[idx].imgUrl || '';
+        previewImageInput();
+      }
+    }
+
+    function previewImageInput() {
+      const url = document.getElementById('admin-team-img-url').value;
+      const previewBox = document.getElementById('admin-img-preview');
+      const previewTag = document.getElementById('admin-img-preview-tag');
+      if (url) {
+        previewTag.src = url;
+        previewBox.style.display = 'block';
+      } else {
+        previewBox.style.display = 'none';
+      }
+    }
+
+    function convertImageToBase64(fileInput) {
+      const file = fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('admin-team-img-url').value = e.target.result;
+          previewImageInput();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function updateTeamName() {
+      const idx = document.getElementById('admin-team-select').value;
+      const newName = document.getElementById('admin-team-name').value;
+      const newImg = document.getElementById('admin-team-img-url').value;
+
+      if (newName && state.teams[idx]) { 
+        state.teams[idx].name = newName; 
+        state.teams[idx].imgUrl = newImg;
+        saveData(); 
+        alert("Team Details gespeichert!"); 
+      }
+    }
+
+    function applyEventPreset() {
+      const val = document.getElementById('admin-event-preset').value;
+      if (val !== 'custom') document.getElementById('admin-points').value = val;
+    }
+
+    function addPointEvent() {
+      const teamId = parseInt(document.getElementById('admin-score-team').value, 10);
+      const points = parseInt(document.getElementById('admin-points').value, 10);
+      const presetSelect = document.getElementById('admin-event-preset');
+      const eventName = presetSelect.options[presetSelect.selectedIndex].text;
+      const note = document.getElementById('admin-note').value;
+
+      if (!isNaN(teamId) && !isNaN(points)) {
+        state.logs.push({ id: Date.now().toString(), timestamp: new Date().toISOString(), teamId, eventName, points, note });
+        document.getElementById('admin-note').value = '';
+        saveData();
+        alert("Punkte verbucht!");
+      }
+    }
+
+    function resetData() {
+      if (confirm("Wirklich alle Daten zurücksetzen?")) {
+        localStorage.removeItem('rampensau_app_state');
+        sessionStorage.removeItem('rampensau_auth');
+        location.reload();
+      }
+    }
+
+    render();
+    if (cloudConfig.binId) fetchFromCloud();
+  </script>
+</body>
+</html>
