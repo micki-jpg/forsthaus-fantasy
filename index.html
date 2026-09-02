@@ -180,6 +180,7 @@
     }
     .badge-green { background: rgba(40, 167, 69, 0.2); color: #28a745; border: 1px solid #28a745; }
     .badge-red { background: rgba(220, 53, 69, 0.2); color: #dc3545; border: 1px solid #dc3545; }
+    .badge-ep { background: rgba(255, 234, 0, 0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
 
     .btn {
       background: var(--accent-pink);
@@ -241,7 +242,6 @@
       border-bottom: 1px solid var(--border);
     }
 
-    /* CONSOLE STYLE STYLING */
     .console-box {
       background-color: #050805;
       color: #00ff66;
@@ -355,7 +355,17 @@
         <div id="log-list"></div>
       </div>
     </div>
-    <!-- 4. ADMIN & SETUP -->
+
+    <!-- 4. DEBUG / CONSOLE LOG -->
+    <div id="debug" class="tab-content">
+      <h2>🖥️ System & Action Console</h2>
+      <p style="color: var(--text-muted)">Echtzeit-Protokoll aller Aktivitäten in der App (für alle Teilnehmerinnen transparent einsehbar):</p>
+      <div class="card">
+        <div class="console-box" id="console-output"></div>
+      </div>
+    </div>
+
+    <!-- 5. ADMIN & SETUP -->
     <div id="admin" class="tab-content">
       <h2>Admin & League Setup</h2>
       <div id="admin-locked-notice" style="display: block; background: var(--bg-card); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--danger);">
@@ -399,10 +409,24 @@
 
         <div class="card">
           <h3>3. Punkte nach Session eintragen</h3>
+          
+          <!-- Neue Felder: Folge Nr. & Datum -->
+          <div class="form-group" style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+              <label>Folge Nr.</label>
+              <input type="number" id="admin-episode" placeholder="z. B. 1" min="1">
+            </div>
+            <div style="flex: 1.2;">
+              <label>Datum</label>
+              <input type="date" id="admin-date">
+            </div>
+          </div>
+
           <div class="form-group">
             <label>Forsthaus-Team</label>
             <select id="admin-score-team"></select>
           </div>
+
           <div class="form-group">
             <label>Ereignis-Vorlage</label>
             <select id="admin-event-preset" onchange="applyEventPreset()">
@@ -415,29 +439,22 @@
               <option value="-15">❌ Rauswurf / Auszug (-15)</option>
             </select>
           </div>
+          
           <div class="form-group">
             <label>Punktewert</label>
             <input type="number" id="admin-points" value="15">
           </div>
+          
           <div class="form-group">
             <label>Notiz / Beschreibung</label>
-            <input type="text" id="admin-note" placeholder="z. B. Folge 2: Streit beim Kochen">
+            <input type="text" id="admin-note" placeholder="z. B. Streit beim Kochen">
           </div>
+          
           <button class="btn btn-success" onclick="addPointEvent()">Punkte verbuchen</button>
         </div>
 
       </div>
     </div>
-    <!-- 5. DEBUG / CONSOLE LOG -->
-    <div id="debug" class="tab-content">
-      <h2>🖥️ System & Action Console</h2>
-      <p style="color: var(--text-muted)">activity log):</p>
-      <div class="card">
-        <div class="console-box" id="console-output"></div>
-      </div>
-    </div>
-
-
 
     <!-- 6. CLOUD-SYNC -->
     <div id="sync" class="tab-content">
@@ -548,7 +565,6 @@
         action: actionText
       });
 
-      // Max. 100 Logs aufbewahren
       if (state.debugLogs.length > 100) {
         state.debugLogs.shift();
       }
@@ -870,10 +886,21 @@
 
       [...state.logs].reverse().forEach(log => {
         const team = state.teams.find(t => t.id === log.teamId);
+        
+        // Anzeige von Folge und Datum als Badges / Text
+        const epBadge = log.episode ? `<span class="badge badge-ep" style="margin-right: 6px;">Folge ${log.episode}</span>` : '';
+        const dateFormatted = log.date ? new Date(log.date).toLocaleDateString('de-DE') : '';
+        const dateStr = dateFormatted ? `<small style="color: var(--text-muted); margin-left: 8px;">📅 ${dateFormatted}</small>` : '';
+
         container.innerHTML += `
           <div class="log-item">
             <div>
-              <strong>${team ? team.name : 'Unbekannt'}</strong> — <span>${log.eventName}</span>
+              <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
+                ${epBadge}
+                <strong>${team ? team.name : 'Unbekannt'}</strong>
+                ${dateStr}
+              </div>
+              <span>${log.eventName}</span>
               ${log.note ? `<br><small style="color: var(--text-muted);">${log.note}</small>` : ''}
             </div>
             <div style="display: flex; align-items: center; gap: 15px;">
@@ -929,6 +956,12 @@
 
       lockedNotice.style.display = 'none';
       adminContent.style.display = 'grid';
+
+      // Vorausfüllen des Datums mit dem heutigen Tag
+      const dateInput = document.getElementById('admin-date');
+      if (dateInput && !dateInput.value) {
+        dateInput.valueAsDate = new Date();
+      }
 
       const pInputs = document.getElementById('player-inputs');
       pInputs.innerHTML = '';
@@ -1016,15 +1049,30 @@
     function addPointEvent() {
       const teamId = parseInt(document.getElementById('admin-score-team').value, 10);
       const points = parseInt(document.getElementById('admin-points').value, 10);
+      const episode = document.getElementById('admin-episode').value;
+      const date = document.getElementById('admin-date').value;
+      
       const presetSelect = document.getElementById('admin-event-preset');
       const eventName = presetSelect.options[presetSelect.selectedIndex].text;
       const note = document.getElementById('admin-note').value;
 
       if (!isNaN(teamId) && !isNaN(points)) {
         const team = state.teams.find(t => t.id === teamId);
-        state.logs.push({ id: Date.now().toString(), timestamp: new Date().toISOString(), teamId, eventName, points, note });
+        state.logs.push({ 
+          id: Date.now().toString(), 
+          timestamp: new Date().toISOString(), 
+          teamId, 
+          eventName, 
+          points, 
+          note,
+          episode,
+          date
+        });
+        
         document.getElementById('admin-note').value = '';
-        logDebug(`Punkte verbucht: ${points >= 0 ? '+' : ''}${points} Pts für "${team ? team.name : 'Team ' + teamId}" (${eventName})`);
+        
+        const epLogStr = episode ? ` (Folge ${episode})` : '';
+        logDebug(`Punkte verbucht: ${points >= 0 ? '+' : ''}${points} Pts für "${team ? team.name : 'Team ' + teamId}"${epLogStr}`);
         saveData();
         alert("Punkte verbucht!");
       }
