@@ -155,12 +155,25 @@
     }
 
     .mini-team-thumb {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       object-fit: cover;
       border: 1.5px solid var(--accent-pink);
       flex-shrink: 0;
+    }
+
+    .mini-placeholder {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #1e2820;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      border: 1px solid var(--border);
     }
 
     .leaderboard-team-row {
@@ -168,6 +181,96 @@
       align-items: center;
       gap: 10px;
       margin-bottom: 6px;
+    }
+
+    /* BARCHART DESIGN */
+    .barchart-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .barchart-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: #111712;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s ease;
+    }
+
+    .barchart-row:hover {
+      border-color: rgba(230, 0, 126, 0.4);
+    }
+
+    .barchart-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 250px;
+      flex-shrink: 0;
+    }
+
+    .barchart-text {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .barchart-team-name {
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-main);
+    }
+
+    .barchart-owners {
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+    }
+
+    .barchart-bar-track {
+      flex: 1;
+      height: 26px;
+      background: #070a07;
+      border-radius: 13px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .barchart-bar-fill {
+      height: 100%;
+      border-radius: 13px;
+      transition: width 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 10px;
+      box-sizing: border-box;
+      min-width: 65px;
+      box-shadow: 0 0 10px rgba(230, 0, 126, 0.3);
+    }
+
+    .barchart-bar-val {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #000;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 650px) {
+      .barchart-row { flex-direction: column; align-items: stretch; gap: 8px; }
+      .barchart-info { width: 100%; }
     }
 
     .badge {
@@ -281,7 +384,7 @@
 <body>
 
   <header>
-    <img src="https://www.tele.at/images/stories/articles/1693237559-forsthaus_rampensau_logo-c-joyn-atv_edited.jpg" alt="Forsthaus Rampensau Logo" class="header-logo">
+    <img src="https://upload.wikimedia.org/wikipedia/de/7/74/Logo_Forsthaus_Rampensau_Germany.webp?utm_source=de.wikipedia.org&utm_campaign=index&utm_content=original" alt="Forsthaus Rampensau Logo" class="header-logo">
     <div class="header-subtitle">Fantasy League</div>
   </header>
 
@@ -321,6 +424,9 @@
         </thead>
         <tbody id="leaderboard-body"></tbody>
       </table>
+
+      <h3 style="margin-top: 35px; color: var(--accent-yellow);">📊 Team-Vergleich (Gesamtpunkte & Kader)</h3>
+      <div id="team-barchart-container" class="card"></div>
     </div>
 
     <!-- 2. DRAFT PHASE -->
@@ -359,7 +465,7 @@
     <!-- 4. DEBUG / CONSOLE LOG -->
     <div id="debug" class="tab-content">
       <h2>🖥️ System & Action Console</h2>
-      <p style="color: var(--text-muted)">Echtzeit-Protokoll aller Aktivitäten in der App (für alle Teilnehmerinnen transparent einsehbar):</p>
+      <p style="color: var(--text-muted)">Echtzeit-Protokoll aller Aktivitäten in der App:</p>
       <div class="card">
         <div class="console-box" id="console-output"></div>
       </div>
@@ -369,16 +475,14 @@
     <div id="admin" class="tab-content">
       <h2>Admin & League Setup</h2>
       <div id="admin-locked-notice" style="display: block; background: var(--bg-card); padding: 20px; border-radius: 8px; text-align: center; border: 1px solid var(--danger);">
-        🔒 <strong>Admin-Bereich geschützt:</strong> Bitte logge dich als Admin mit deinem Admin-PIN ein, um Einstellungen zu verändern.
+        🔒 <strong>Admin-Bereich geschützt:</strong> Bitte logge dich als Admin ein.
         <br><br>
         <button class="btn btn-secondary" style="width: auto;" onclick="openLoginModal('admin')">🔑 Als Admin einloggen</button>
       </div>
 
       <div id="admin-content" class="grid-admin" style="display: none;">
-        
         <div class="card">
           <h3>1. Fantasy-Spielerinnen & PINs</h3>
-          <p style="font-size: 0.8rem; color: var(--text-muted);">Vergib individuelle Passwörter/PINs für die 4 Spielerinnen.</p>
           <div id="player-inputs"></div>
           <button class="btn" onclick="savePlayerSettings()">Zugänge Speichern</button>
         </div>
@@ -409,7 +513,6 @@
 
         <div class="card">
           <h3>3. Punkte nach Session eintragen</h3>
-          
           <div class="form-group" style="display: flex; gap: 10px;">
             <div style="flex: 1;">
               <label>Folge Nr.</label>
@@ -451,7 +554,6 @@
           
           <button class="btn btn-success" onclick="addPointEvent()">Punkte verbuchen</button>
         </div>
-
       </div>
     </div>
 
@@ -459,19 +561,15 @@
     <div id="sync" class="tab-content">
       <h2>☁️ Live-Cloud-Sync</h2>
       <div class="card" style="max-width: 650px;">
-        <h3>API-Zugangsdaten (Vorkonfiguriert)</h3>
-        <p style="color: var(--text-muted)">Die Cloud-Zugangsdaten sind direkt im Code hinterlegt.</p>
-        
+        <h3>API-Zugangsdaten</h3>
         <div class="form-group">
           <label>JSONBin Bin ID</label>
           <input type="text" id="cfg-bin-id">
         </div>
-        
         <div class="form-group">
           <label>JSONBin Master Key</label>
           <input type="password" id="cfg-master-key">
         </div>
-
         <button class="btn btn-success" onclick="saveCloudConfig()">💾 Cloud-Anbindung Ändern</button>
 
         <h3 style="margin-top: 30px;">🔗 Link für Mädels teilen</h3>
@@ -481,10 +579,9 @@
         <button class="btn btn-secondary" onclick="copyShareLink()">📋 Link Kopieren</button>
 
         <h3 style="margin-top: 30px; color: var(--danger);">Gefahrenzone</h3>
-        <button class="btn btn-danger" onclick="resetData()">⚠️ Gesamte Liga lokal zurücksetzen</button>
+        <button class="btn btn-danger" onclick="resetData()">⚠️ Gesamte Liga zurücksetzen</button>
       </div>
     </div>
-
   </div>
 
   <!-- LOGIN MODAL -->
@@ -517,12 +614,7 @@
       owners: []
     }));
 
-    const DRAFT_ORDER = [
-      0, 1, 2, 3, // Runde 1
-      3, 2, 1, 0, // Runde 2
-      0, 1, 2, 3, // Runde 3
-      3, 2, 1, 0  // Runde 4
-    ];
+    const DRAFT_ORDER = [0, 1, 2, 3, 3, 2, 1, 0, 0, 1, 2, 3, 3, 2, 1, 0];
 
     function sanitizeState(incoming) {
       if (!incoming || typeof incoming !== 'object') incoming = {};
@@ -543,13 +635,8 @@
     }
 
     let state = sanitizeState(JSON.parse(localStorage.getItem('rampensau_app_state')));
-
     let currentAuth = JSON.parse(sessionStorage.getItem('rampensau_auth')) || null;
-    
-    let cloudConfig = JSON.parse(localStorage.getItem('rampensau_cloud_config')) || { 
-      binId: HARDCODED_BIN_ID, 
-      masterKey: HARDCODED_MASTER_KEY 
-    };
+    let cloudConfig = JSON.parse(localStorage.getItem('rampensau_cloud_config')) || { binId: HARDCODED_BIN_ID, masterKey: HARDCODED_MASTER_KEY };
 
     if (!cloudConfig.binId) cloudConfig.binId = HARDCODED_BIN_ID;
     if (!cloudConfig.masterKey) cloudConfig.masterKey = HARDCODED_MASTER_KEY;
@@ -565,16 +652,8 @@
       if (!state.debugLogs) state.debugLogs = [];
       const now = new Date();
       const timeStr = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      
-      state.debugLogs.push({
-        time: timeStr,
-        user: getCurrentUserName(),
-        action: actionText
-      });
-
-      if (state.debugLogs.length > 100) {
-        state.debugLogs.shift();
-      }
+      state.debugLogs.push({ time: timeStr, user: getCurrentUserName(), action: actionText });
+      if (state.debugLogs.length > 100) state.debugLogs.shift();
     }
 
     async function saveData() {
@@ -585,23 +664,16 @@
 
     async function fetchFromCloud() {
       const syncStatus = document.getElementById('sync-status');
-      if (!cloudConfig.binId) {
-        if (syncStatus) { syncStatus.innerText = "🟡 Offline"; syncStatus.style.color = "var(--accent-yellow)"; }
-        return;
-      }
+      if (!cloudConfig.binId) return;
       if (syncStatus) { syncStatus.innerText = "🔄 Lade Cloud Daten..."; syncStatus.style.color = "var(--accent-yellow)"; }
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500); // Max 3.5 Sekunden Warten
-
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
         const headers = {};
         if (cloudConfig.masterKey) headers['X-Master-Key'] = cloudConfig.masterKey;
 
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudConfig.binId}/latest`, { 
-          headers,
-          signal: controller.signal 
-        });
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudConfig.binId}/latest`, { headers, signal: controller.signal });
         clearTimeout(timeoutId);
 
         if (!res.ok) throw new Error("Cloud HTTP Fehler");
@@ -612,11 +684,8 @@
           localStorage.setItem('rampensau_app_state', JSON.stringify(state));
           render();
           if (syncStatus) { syncStatus.innerText = "🟢 Cloud Live"; syncStatus.style.color = "var(--success)"; }
-        } else {
-          throw new Error("Ungültige Datenstruktur");
         }
       } catch (err) {
-        console.warn("Cloud-Sync Fehler oder Offline-Modus:", err.message);
         if (syncStatus) { syncStatus.innerText = "🔴 Offline / Lokaler Modus"; syncStatus.style.color = "var(--danger)"; }
       }
     }
@@ -628,7 +697,6 @@
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3500);
-
         const res = await fetch(`https://api.jsonbin.io/v3/b/${cloudConfig.binId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'X-Master-Key': cloudConfig.masterKey },
@@ -636,11 +704,8 @@
           signal: controller.signal
         });
         clearTimeout(timeoutId);
-
-        if (!res.ok) throw new Error("Speicherfehler");
         if (syncStatus) { syncStatus.innerText = "🟢 Cloud Live"; syncStatus.style.color = "var(--success)"; }
       } catch (err) {
-        console.warn("Cloud Speichern fehlgeschlagen:", err.message);
         if (syncStatus) { syncStatus.innerText = "🔴 Speicher-Fehler"; syncStatus.style.color = "var(--danger)"; }
       }
     }
@@ -657,9 +722,7 @@
 
     function updateShareLink() {
       const linkInput = document.getElementById('share-link-input');
-      if (linkInput) {
-        linkInput.value = window.location.href.split('#')[0];
-      }
+      if (linkInput) linkInput.value = window.location.href.split('#')[0];
     }
 
     function copyShareLink() {
@@ -676,35 +739,21 @@
       
       const targetContent = document.getElementById(tabId);
       if (targetContent) targetContent.classList.add('active');
-      
-      if (btnElement) {
-        btnElement.classList.add('active');
-      } else {
-        const matchingBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
-        if (matchingBtn) matchingBtn.classList.add('active');
-      }
+      if (btnElement) btnElement.classList.add('active');
       render();
     }
 
-    /* AUTH LOGIC */
     function openLoginModal(targetRole = null) {
       const sel = document.getElementById('login-user-select');
       sel.innerHTML = '';
-      
-      state.players.forEach((p, idx) => {
-        sel.innerHTML += `<option value="player-${idx}">${p}</option>`;
-      });
+      state.players.forEach((p, idx) => { sel.innerHTML += `<option value="player-${idx}">${p}</option>`; });
       sel.innerHTML += `<option value="admin">👑 Admin</option>`;
-
       if (targetRole === 'admin') sel.value = 'admin';
-
       document.getElementById('login-pin-input').value = '';
       document.getElementById('login-modal').style.display = 'flex';
     }
 
-    function closeLoginModal() {
-      document.getElementById('login-modal').style.display = 'none';
-    }
+    function closeLoginModal() { document.getElementById('login-modal').style.display = 'none'; }
 
     function submitLogin() {
       const val = document.getElementById('login-user-select').value;
@@ -715,24 +764,16 @@
           currentAuth = { type: 'admin' };
           sessionStorage.setItem('rampensau_auth', JSON.stringify(currentAuth));
           logDebug("Admin-Login erfolgreich");
-          closeLoginModal();
-          saveData();
-          alert("Erfolgreich als Admin eingeloggt!");
-        } else {
-          alert("Falsches Admin-Passwort!");
-        }
+          closeLoginModal(); saveData(); alert("Erfolgreich als Admin eingeloggt!");
+        } else alert("Falsches Admin-Passwort!");
       } else if (val.startsWith('player-')) {
         const pIdx = parseInt(val.replace('player-', ''), 10);
         if (pin === state.pins[pIdx]) {
           currentAuth = { type: 'player', index: pIdx };
           sessionStorage.setItem('rampensau_auth', JSON.stringify(currentAuth));
           logDebug(`Login erfolgreich (${state.players[pIdx]})`);
-          closeLoginModal();
-          saveData();
-          alert(`Eingeloggt als ${state.players[pIdx]}`);
-        } else {
-          alert("Falscher PIN für diese Spielerin!");
-        }
+          closeLoginModal(); saveData(); alert(`Eingeloggt als ${state.players[pIdx]}`);
+        } else alert("Falscher PIN!");
       }
     }
 
@@ -758,7 +799,7 @@
 
       if (activeNameEl && logoutBtn) {
         if (!currentAuth) {
-          activeNameEl.innerText = "Nicht eingeloggt (Nur-Lese-Modus)";
+          activeNameEl.innerText = "Nicht eingeloggt";
           logoutBtn.style.display = 'none';
         } else if (currentAuth.type === 'admin') {
           activeNameEl.innerText = "👑 Admin";
@@ -770,11 +811,12 @@
       }
 
       renderLeaderboard();
+      renderTeamBarchart();
       renderDraft();
       renderLogs();
       renderDebugConsole();
       renderAdmin();
-      
+
       const binInput = document.getElementById('cfg-bin-id');
       const keyInput = document.getElementById('cfg-master-key');
       if (binInput) binInput.value = cloudConfig.binId || '';
@@ -789,8 +831,7 @@
 
       const playerScores = state.players.map((name, index) => {
         const myTeams = state.teams.filter(t => t.owners.includes(index));
-        const totalPoints = getPlayerPoints(index);
-        return { name, teams: myTeams, totalPoints };
+        return { name, teams: myTeams, totalPoints: getPlayerPoints(index) };
       });
 
       playerScores.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -799,12 +840,7 @@
         let rankClass = rank === 0 ? 'rank-1' : rank === 1 ? 'rank-2' : rank === 2 ? 'rank-3' : '';
         const teamDetails = p.teams.map(t => {
           const imgTag = t.imgUrl ? `<img src="${t.imgUrl}" class="mini-team-thumb">` : '';
-          return `
-            <div class="leaderboard-team-row">
-              ${imgTag}
-              <span>${t.name} (<strong style="color: var(--accent-yellow);">${getTeamPoints(t.id)} Pts</strong>)</span>
-            </div>
-          `;
+          return `<div class="leaderboard-team-row">${imgTag}<span>${t.name} (<strong style="color: var(--accent-yellow);">${getTeamPoints(t.id)} Pts</strong>)</span></div>`;
         }).join('');
         
         tbody.innerHTML += `
@@ -816,6 +852,54 @@
           </tr>
         `;
       });
+    }
+
+    function renderTeamBarchart() {
+      const container = document.getElementById('team-barchart-container');
+      if (!container) return;
+
+      const sortedTeams = [...state.teams].map(t => ({
+        ...t,
+        points: getTeamPoints(t.id)
+      })).sort((a, b) => b.points - a.points);
+
+      const maxPoints = Math.max(...sortedTeams.map(t => t.points), 1);
+
+      let html = '<div class="barchart-wrapper">';
+      sortedTeams.forEach(team => {
+        const ownerNames = (team.owners && team.owners.length > 0)
+          ? team.owners.map(pIdx => state.players[pIdx] || `Spielerin ${pIdx + 1}`).join(', ')
+          : 'Nicht gedraftet';
+
+        const rawPct = (team.points / maxPoints) * 100;
+        const displayPct = team.points > 0 ? Math.max(rawPct, 8) : 0;
+        const barGradient = team.points < 0 
+          ? 'linear-gradient(90deg, #dc3545, #ff6b6b)' 
+          : 'linear-gradient(90deg, var(--accent-pink), var(--accent-yellow))';
+
+        const imgTag = team.imgUrl 
+          ? `<img src="${team.imgUrl}" class="mini-team-thumb">` 
+          : `<div class="mini-placeholder">🦝</div>`;
+
+        html += `
+          <div class="barchart-row">
+            <div class="barchart-info">
+              ${imgTag}
+              <div class="barchart-text">
+                <strong class="barchart-team-name">${team.name}</strong>
+                <span class="barchart-owners">👥 Kader: ${ownerNames}</span>
+              </div>
+            </div>
+            <div class="barchart-bar-track">
+              <div class="barchart-bar-fill" style="width: ${displayPct}%; background: ${barGradient};">
+                <span class="barchart-bar-val">${team.points} Pts</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      container.innerHTML = html;
     }
 
     function renderDraft() {
@@ -835,14 +919,10 @@
 
       state.teams.forEach((team, index) => {
         const alreadyInMyKader = currentPIndex !== null && team.owners.includes(currentPIndex);
-        let badge = alreadyInMyKader 
-          ? `<span class="badge badge-red">Bereits im Kader</span>` 
-          : `<span class="badge badge-green">Verfügbar</span>`;
+        let badge = alreadyInMyKader ? `<span class="badge badge-red">Bereits im Kader</span>` : `<span class="badge badge-green">Verfügbar</span>`;
 
         const ownerNames = team.owners.map(pIdx => state.players[pIdx] || `Spielerin ${pIdx + 1}`).join(', ');
-        const imgHTML = team.imgUrl 
-          ? `<img src="${team.imgUrl}" class="team-card-img" alt="${team.name}">` 
-          : `<div class="team-img-placeholder">🦝 Kein Bild vorhanden</div>`;
+        const imgHTML = team.imgUrl ? `<img src="${team.imgUrl}" class="team-card-img">` : `<div class="team-img-placeholder">🦝 Kein Bild</div>`;
 
         const card = document.createElement('div');
         card.className = 'card';
@@ -850,11 +930,9 @@
         
         let buttonHTML = '';
         if (!isFinished && !alreadyInMyKader) {
-          if (canIUserPick) {
-            buttonHTML = `<button class="btn" style="margin-top:10px;" onclick="draftTeam(${index})">Wählen</button>`;
-          } else {
-            buttonHTML = `<button class="btn btn-secondary" style="margin-top:10px;" disabled title="Du bist nicht am Pick oder nicht eingeloggt">🔒 Am Pick: ${state.players[currentPIndex] || '-'}</button>`;
-          }
+          buttonHTML = canIUserPick 
+            ? `<button class="btn" style="margin-top:10px;" onclick="draftTeam(${index})">Wählen</button>`
+            : `<button class="btn btn-secondary" style="margin-top:10px;" disabled>🔒 Am Pick: ${state.players[currentPIndex] || '-'}</button>`;
         }
 
         card.innerHTML = `
@@ -885,13 +963,12 @@
     function draftTeam(teamIndex) {
       if (state.draftTurnIndex >= DRAFT_ORDER.length) return;
       const currentPIndex = DRAFT_ORDER[state.draftTurnIndex];
-
       if (!currentAuth || (currentAuth.type !== 'admin' && currentAuth.index !== currentPIndex)) {
-        return alert(`Nur ${state.players[currentPIndex]} kann aktuell wählen! Bitte logge dich als ${state.players[currentPIndex]} ein.`);
+        return alert(`Nur ${state.players[currentPIndex]} kann aktuell wählen!`);
       }
 
       const team = state.teams[teamIndex];
-      if (team.owners.includes(currentPIndex)) return alert("Du hast dieses Team bereits in deinem Kader!");
+      if (team.owners.includes(currentPIndex)) return alert("Bereits im Kader!");
 
       team.owners.push(currentPIndex);
       state.draftTurnIndex++;
@@ -906,11 +983,7 @@
       let removedTeam = "";
       for (let t of state.teams) {
         const idx = t.owners.lastIndexOf(lastPIndex);
-        if (idx !== -1) { 
-          t.owners.splice(idx, 1); 
-          removedTeam = t.name;
-          break; 
-        }
+        if (idx !== -1) { t.owners.splice(idx, 1); removedTeam = t.name; break; }
       }
       logDebug(`Draft Pick rückgängig gemacht: "${removedTeam}"`);
       saveData();
@@ -930,17 +1003,10 @@
 
       [...state.logs].reverse().forEach(log => {
         const team = state.teams.find(t => t.id === log.teamId);
-        
         const epBadge = log.episode ? `<span class="badge badge-ep" style="margin-right: 6px;">Folge ${log.episode}</span>` : '';
-        const dateFormatted = log.date ? new Date(log.date).toLocaleDateString('de-DE') : '';
-        const dateStr = dateFormatted ? `<small style="color: var(--text-muted); margin-left: 8px;">📅 ${dateFormatted}</small>` : '';
-
-        // Anzeige welche Fantasy-Spielerin(nen) dieses Team gedraftet haben
         const ownerNames = (team && team.owners && team.owners.length > 0)
           ? team.owners.map(pIdx => state.players[pIdx] || `Spielerin ${pIdx + 1}`).join(', ')
           : 'Kein Kader';
-        
-        const ownersBadge = `<span style="color: var(--accent-cyan); font-weight: 600; font-size: 0.85rem; margin-left: 8px;">👥 ${ownerNames}</span>`;
 
         container.innerHTML += `
           <div class="log-item">
@@ -948,8 +1014,7 @@
               <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
                 ${epBadge}
                 <strong>${team ? team.name : 'Unbekannt'}</strong>
-                ${ownersBadge}
-                ${dateStr}
+                <span style="color: var(--accent-cyan); font-weight: 600; font-size: 0.85rem; margin-left: 8px;">👥 ${ownerNames}</span>
               </div>
               <span>${log.eventName}</span>
               ${log.note ? `<br><small style="color: var(--text-muted);">${log.note}</small>` : ''}
@@ -968,11 +1033,10 @@
     function renderDebugConsole() {
       const consoleBox = document.getElementById('console-output');
       if (!consoleBox) return;
-
       consoleBox.innerHTML = '';
 
       if (!state.debugLogs || state.debugLogs.length === 0) {
-        consoleBox.innerHTML = '<div class="console-line" style="color: #555;">> System initialisiert. Warten auf Aktionen...</div>';
+        consoleBox.innerHTML = '<div class="console-line" style="color: #555;">> System bereit...</div>';
         return;
       }
 
@@ -988,10 +1052,9 @@
     }
 
     function deleteLog(logId) {
-      if (!currentAuth || currentAuth.type !== 'admin') return alert("Nur Admins dürfen Logs löschen!");
-      const targetLog = state.logs.find(l => l.id === logId);
+      if (!currentAuth || currentAuth.type !== 'admin') return alert("Nur Admins!");
       state.logs = state.logs.filter(l => l.id !== logId);
-      logDebug(`Punkte-Eintrag gelöscht (${targetLog ? targetLog.points + ' Pts' : 'ID ' + logId})`);
+      logDebug(`Log gelöscht (ID: ${logId})`);
       saveData();
     }
 
@@ -1009,19 +1072,14 @@
       lockedNotice.style.display = 'none';
       adminContent.style.display = 'grid';
 
-      const dateInput = document.getElementById('admin-date');
-      if (dateInput && !dateInput.value) {
-        dateInput.valueAsDate = new Date();
-      }
-
       const pInputs = document.getElementById('player-inputs');
       if (pInputs) {
         pInputs.innerHTML = '';
         state.players.forEach((name, idx) => {
           pInputs.innerHTML += `
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-              <input type="text" id="p-input-${idx}" value="${name}" placeholder="Name">
-              <input type="text" id="p-pin-${idx}" value="${state.pins[idx] || '1234'}" placeholder="PIN" style="width: 90px;">
+              <input type="text" id="p-input-${idx}" value="${name}">
+              <input type="text" id="p-pin-${idx}" value="${state.pins[idx] || '1234'}" style="width: 90px;">
             </div>
           `;
         });
@@ -1040,23 +1098,15 @@
     }
 
     function savePlayerSettings() {
-      state.players = state.players.map((_, idx) => {
-        const inp = document.getElementById(`p-input-${idx}`);
-        return (inp && inp.value.trim()) ? inp.value.trim() : `Spielerin ${idx + 1}`;
-      });
-      state.pins = state.players.map((_, idx) => {
-        const pinInp = document.getElementById(`p-pin-${idx}`);
-        return (pinInp && pinInp.value.trim()) ? pinInp.value.trim() : `1234`;
-      });
-      logDebug("Spielerinnen-Namen & PINs aktualisiert");
+      state.players = state.players.map((_, idx) => document.getElementById(`p-input-${idx}`).value.trim() || `Spielerin ${idx + 1}`);
+      state.pins = state.players.map((_, idx) => document.getElementById(`p-pin-${idx}`).value.trim() || `1234`);
+      logDebug("Spielerinnen/PINs gespeichert");
       saveData();
-      alert("Spielerinnen und PINs gespeichert!");
+      alert("Gespeichert!");
     }
 
     function loadTeamNameForEdit() {
-      const sel = document.getElementById('admin-team-select');
-      if (!sel) return;
-      const idx = sel.value;
+      const idx = document.getElementById('admin-team-select').value;
       if (state.teams[idx]) {
         document.getElementById('admin-team-name').value = state.teams[idx].name;
         document.getElementById('admin-team-img-url').value = state.teams[idx].imgUrl || '';
@@ -1069,11 +1119,8 @@
       const previewBox = document.getElementById('admin-img-preview');
       const previewTag = document.getElementById('admin-img-preview-tag');
       if (url && previewBox && previewTag) {
-        previewTag.src = url;
-        previewBox.style.display = 'block';
-      } else if (previewBox) {
-        previewBox.style.display = 'none';
-      }
+        previewTag.src = url; previewBox.style.display = 'block';
+      } else if (previewBox) previewBox.style.display = 'none';
     }
 
     function convertImageToBase64(fileInput) {
@@ -1096,15 +1143,14 @@
       if (newName && state.teams[idx]) { 
         state.teams[idx].name = newName; 
         state.teams[idx].imgUrl = newImg;
-        logDebug(`Team-Slot ${parseInt(idx) + 1} umbenannt in "${newName}"`);
-        saveData(); 
-        alert("Team Details gespeichert!"); 
+        logDebug(`Team ${parseInt(idx) + 1} umbenannt in "${newName}"`);
+        saveData(); alert("Team gespeichert!"); 
       }
     }
 
     function applyEventPreset() {
       const val = document.getElementById('admin-event-preset').value;
-      if (val !== 'custom') document.getElementById('admin-points').value = val;
+      document.getElementById('admin-points').value = val;
     }
 
     function addPointEvent() {
@@ -1112,28 +1158,15 @@
       const points = parseInt(document.getElementById('admin-points').value, 10);
       const episode = document.getElementById('admin-episode').value;
       const date = document.getElementById('admin-date').value;
-      
       const presetSelect = document.getElementById('admin-event-preset');
       const eventName = presetSelect.options[presetSelect.selectedIndex].text;
       const note = document.getElementById('admin-note').value;
 
       if (!isNaN(teamId) && !isNaN(points)) {
         const team = state.teams.find(t => t.id === teamId);
-        state.logs.push({ 
-          id: Date.now().toString(), 
-          timestamp: new Date().toISOString(), 
-          teamId, 
-          eventName, 
-          points, 
-          note,
-          episode,
-          date
-        });
-        
+        state.logs.push({ id: Date.now().toString(), timestamp: new Date().toISOString(), teamId, eventName, points, note, episode, date });
         document.getElementById('admin-note').value = '';
-        
-        const epLogStr = episode ? ` (Folge ${episode})` : '';
-        logDebug(`Punkte verbucht: ${points >= 0 ? '+' : ''}${points} Pts für "${team ? team.name : 'Team ' + teamId}"${epLogStr}`);
+        logDebug(`Punkte verbucht: ${points >= 0 ? '+' : ''}${points} Pts für "${team ? team.name : teamId}"`);
         saveData();
         alert("Punkte verbucht!");
       }
@@ -1141,14 +1174,12 @@
 
     function resetData() {
       if (confirm("Wirklich alle Daten zurücksetzen?")) {
-        logDebug("⚠️ Gesamte Liga auf Werkseinstellungen zurückgesetzt");
         localStorage.removeItem('rampensau_app_state');
         sessionStorage.removeItem('rampensau_auth');
         location.reload();
       }
     }
 
-    // Erstes Rendering & Cloud-Abruf beim Laden
     render();
     fetchFromCloud();
   </script>
