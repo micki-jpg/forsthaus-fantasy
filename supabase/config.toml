@@ -1,0 +1,2 @@
+[functions.fantasy-auth]
+verify_jwt = false
