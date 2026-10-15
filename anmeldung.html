@@ -1,4 +1,114 @@
-<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Forsthaus · Zugang einrichten</title><style>body{margin:0;background:#151a16;color:#f7efdc;font:16px system-ui}main{max-width:480px;margin:40px auto;padding:24px}img{width:280px;max-width:100%;display:block;margin:auto}section{padding:24px;background:#242a22;border:1px solid #75533b;border-radius:22px;margin:20px 0}label{display:block;margin:14px 0 6px}input,button,select{box-sizing:border-box;width:100%;padding:13px;border-radius:12px;font:inherit;border:1px solid #41473b;background:#151a16;color:#f7efdc}button{background:#c93b32;margin-top:16px;cursor:pointer}button:disabled{opacity:.5}a{color:#edc99c}.muted{font-size:13px;color:#b9beaf}[hidden]{display:none!important}#status{white-space:pre-wrap}textarea{width:100%;box-sizing:border-box;background:#151a16;color:#f7efdc;min-height:90px}button:focus-visible,input:focus-visible{outline:3px solid #edc99c}</style><main><img src="assets/fantasy-league-logo.png" alt="Forsthaus Fantasy League"><section><h1 id="title">Anmelden</h1><p class="muted">Login mit Namen und Passwort. Keine persönliche E-Mail-Adresse nötig.</p><form id="access"><label for="login">Login-Name</label><input id="login" name="login" pattern="[a-zA-Z0-9_]{3,24}" minlength="3" maxlength="24" required autocomplete="username"><div id="register" hidden><label for="name">Name in der Liga</label><input id="name" maxlength="32" autocomplete="nickname"></div><label for="password">Passwort</label><input id="password" type="password" minlength="10" maxlength="128" required autocomplete="current-password"><div id="repeat-wrap" hidden><label for="repeat">Passwort wiederholen</label><input id="repeat" type="password" autocomplete="new-password"></div><button id="submit">Anmelden</button></form><button id="normal-login" type="button" hidden>Bereits registriert? Zur Anmeldung</button><p id="status" role="status"></p><div id="session" hidden><p id="who"></p><p class="muted">Dein Zugang ist eingerichtet. Öffne die Liga, um deinen Kader, den Draft und die Wertung zu sehen.</p><a class="button" href="index.html" style="display:block;text-align:center;padding:14px;border-radius:12px;background:#c93b32;color:#fff;text-decoration:none">Zur Liga →</a><button id="logout">Abmelden</button></div></section><section id="invites" hidden><h2>Zugänge verwalten</h2><div id="member-status"></div><button id="refresh-links" type="button">Status aktualisieren</button><p class="muted">Ein neuer Link ersetzt ältere ungenutzte Links für denselben Platz. Gültig für sieben Tage. Über Signal persönlich verschicken.</p><label for="slot">Spielerplatz</label><select id="slot"></select><button id="create-invite">Einladung erstellen</button><button id="create-reset">Passwort-Reset-Link erstellen</button><button id="revoke-link">Offenen Link sperren</button><label for="link">Einladungslink</label><textarea id="link" readonly></textarea><button id="copy">Link kopieren</button></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script><script>
+<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Forsthaus · Zugang einrichten</title><meta name="theme-color" content="#e6e0d5"><script>(function(){try{let c=localStorage.getItem('forstsau_theme')||'system';document.documentElement.dataset.theme=c==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):c;document.querySelector('meta[name="theme-color"]').content=document.documentElement.dataset.theme==='dark'?'#080f0c':'#e6e0d5';}catch{document.documentElement.dataset.theme='light';}})();</script><style>body{margin:0;background:#151a16;color:#f7efdc;font:16px system-ui}main{max-width:480px;margin:40px auto;padding:24px}img{width:280px;max-width:100%;display:block;margin:auto}section{padding:24px;background:#242a22;border:1px solid #75533b;border-radius:22px;margin:20px 0}label{display:block;margin:14px 0 6px}input,button,select{box-sizing:border-box;width:100%;padding:13px;border-radius:12px;font:inherit;border:1px solid #41473b;background:#151a16;color:#f7efdc}button{background:#c93b32;margin-top:16px;cursor:pointer}button:disabled{opacity:.5}a{color:#edc99c}.muted{font-size:13px;color:#b9beaf}[hidden]{display:none!important}#status{white-space:pre-wrap}textarea{width:100%;box-sizing:border-box;background:#151a16;color:#f7efdc;min-height:90px}button:focus-visible,input:focus-visible{outline:3px solid #edc99c}
+:root,html[data-theme="light"]{color-scheme:light;--bg:#e6e0d5;--surface:#f1ede4;--ink:#192921;--muted:#4b5b50;--line:#c7c6bb;--accent:#98362e;--link:#98362e;--focus:#953b33}
+html[data-theme="dark"]{color-scheme:dark;--bg:#080f0c;--surface:#121d17;--ink:#e8ede4;--muted:#abb9ac;--line:#2b3b31;--accent:#963e37;--link:#f0a59a;--focus:#f2afa2}
+body{background:var(--bg);color:var(--ink);font:15px Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;line-height:1.5}
+main{max-width:485px;margin:24px auto;padding:18px}main img{width:264px}section{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:0 6px 28px #00000007}
+h1{font-size:30px;font-weight:760;letter-spacing:-.045em;margin:0 0 10px}h2{letter-spacing:-.03em}
+input,button,select,textarea{background:var(--surface);color:var(--ink);border:1px solid var(--line);min-height:47px;padding:12px 14px}
+button{background:var(--accent);color:#fffefa;font-weight:690;border-color:transparent}button:hover{filter:brightness(.96)}a{color:var(--link)}.muted{color:var(--muted)}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+#session .button{background:var(--accent)!important}
+@media(max-width:420px){main{padding:12px;margin:12px auto}section{padding:19px;border-radius:17px}main img{width:230px}}
+
+.auth-back{display:inline-flex;align-items:center;gap:9px;min-height:44px;max-width:max-content;padding:8px 10px 8px 2px;margin-bottom:11px;text-decoration:none;color:var(--ink);font-weight:650;font-size:14px;border-radius:9px}
+.auth-back svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.auth-back:hover{color:var(--accent)}.auth-back:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+
+/* Schritt 14: Login mit originalem Alpenpanorama und neutraleren grünen Akzenten */
+:root,html[data-theme="light"]{--accent:#294c3c;--cta-ink:#f8f7ef;--link:#285e46;--focus:#56856b;--glass:rgba(244,239,230,.9)}
+html[data-theme="dark"]{--accent:#a7c6b1;--cta-ink:#0a1b13;--link:#b6d3bf;--focus:#a7c6b1;--glass:rgba(14,23,18,.9)}
+body{position:relative;min-height:100dvh;isolation:isolate;background:var(--bg);}
+body::before{content:"";position:absolute;inset:0 0 auto 0;height:min(570px,80vh);z-index:-1;pointer-events:none;
+ background-image:url('assets/design/alpen-panorama-960.webp');background-repeat:no-repeat;background-position:center 33%;background-size:cover;
+ opacity:.37;filter:saturate(.75) contrast(.93)}
+body::after{content:"";position:absolute;inset:0 0 auto 0;height:min(590px,86vh);z-index:-1;pointer-events:none;
+ background:linear-gradient(180deg,rgba(230,224,213,.04) 0%,rgba(230,224,213,.2) 25%,var(--bg) 96%)}
+html[data-theme="dark"] body::before{background-image:url('assets/design/alpen-panorama-dark-960.webp');opacity:.35;filter:saturate(.62) brightness(.83)}
+html[data-theme="dark"] body::after{background:linear-gradient(180deg,rgba(8,15,12,.08) 0%,rgba(8,15,12,.4) 38%,var(--bg) 96%)}
+main{position:relative;z-index:1;max-width:496px;margin:0 auto;padding:24px 18px 42px}
+main picture{display:block;margin:4px auto 20px;max-width:300px}
+main picture img{width:100%;max-width:300px;height:auto;filter:drop-shadow(0 8px 18px rgba(0,0,0,.18))}
+section{background:var(--glass);border-color:var(--line);box-shadow:0 15px 44px rgba(0,0,0,.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+section h1{font-size:29px}
+button:not(.auth-back){background:var(--accent);color:var(--cta-ink);border-color:transparent;font-weight:720;transition:background-color .16s ease,transform .16s ease}
+button:not(.auth-back):hover{filter:none;transform:translateY(-1px)}
+button:not(.auth-back):active{transform:translateY(0)}
+a.auth-enter-app{display:block;text-align:center;padding:14px;margin-top:13px;border-radius:12px;background:var(--accent);color:var(--cta-ink);font-weight:730;text-decoration:none}
+#session .button{background:var(--accent)!important;color:var(--cta-ink)!important}
+.auth-back{background:transparent;min-height:44px}
+.auth-back:hover{color:var(--link)}
+a{color:var(--link)}
+@media(min-width:700px){body::before{background-image:url('assets/design/alpen-panorama-1600.webp')}html[data-theme="dark"] body::before{background-image:url('assets/design/alpen-panorama-dark-1600.webp')}}
+@media(max-width:420px){main{margin:0 auto;padding:14px 13px 30px}main picture{max-width:254px;margin-bottom:14px}section{padding:19px;border-radius:18px}body::before{height:470px}body::after{height:500px}}
+@media(prefers-reduced-motion:reduce){button:not(.auth-back){transition:none}}
+
+
+
+/* Schritt 15 — Kontrast, Fokus und kompaktere mobile Anmeldung */
+html[data-theme="dark"]{--accent:#a7c6b1;--cta-ink:#08180f;--line:#385145;--glass:rgba(12,20,15,.92)}
+html[data-theme="light"]{--accent:#244b3b;--cta-ink:#fffdf5;--line:#bcb9ac;--glass:rgba(242,237,227,.94)}
+#submit,#normal-login,#logout,#refresh-links,#create-invite,#create-reset,#revoke-link,#copy{min-height:48px}
+#submit:disabled,button:disabled{opacity:1;cursor:not-allowed;background:color-mix(in srgb,var(--accent) 82%,var(--surface));color:var(--cta-ink);border:1px solid color-mix(in srgb,var(--accent) 60%,var(--surface))}
+html[data-theme="dark"] #submit:disabled,html[data-theme="dark"] button:disabled{background:#5e8b73;color:#07180f;border-color:#628f78}
+html[data-theme="light"] #submit:disabled,html[data-theme="light"] button:disabled{background:#527664;color:#fffdf5;border-color:#527664}
+section{overflow:hidden}section h1{line-height:1.14}
+input{max-width:100%;font-size:16px;border-radius:11px}
+#status{overflow-wrap:anywhere}
+@media(max-width:420px){main{padding:13px 14px 32px}section{padding:20px 18px}main picture{max-width:244px;margin-bottom:13px}.auth-back{margin-bottom:8px}section h1{font-size:27px}section .muted{line-height:1.45}}
+
+/* Dunkler Login: kontraststarker statt ausgewaschener Button */
+html[data-theme="dark"]{--accent:#315e49;--cta-ink:#f7fbf5}
+html[data-theme="dark"] #submit:disabled,html[data-theme="dark"] button:disabled{background:#294c3b;color:#eff4ed;border-color:#3b6652}
+
+/* Schritt 17 — gleicher stationärer Alpen-Hintergrund wie in der Haupt-App. */
+body::before,body::after{content:none!important;display:none!important}
+.auth-alpine-atmosphere{
+ position:fixed;
+ inset:0;
+ width:100%;
+ height:100vh;
+ height:100svh;
+ overflow:hidden;
+ pointer-events:none;
+ z-index:0;
+ background:var(--bg);
+}
+.auth-alpine-atmosphere::before{
+ content:"";
+ position:absolute;
+ inset:0 0 auto;
+ height:min(650px,82svh);
+ background-image:url('assets/design/alpen-panorama-960.webp');
+ background-position:center 34%;
+ background-size:cover;
+ background-repeat:no-repeat;
+ opacity:.46;
+ filter:saturate(.72) contrast(.91);
+}
+.auth-alpine-atmosphere::after{
+ content:"";
+ position:absolute;
+ inset:0;
+ background:linear-gradient(180deg,rgba(230,224,213,.02) 0%,rgba(230,224,213,.18) 32%,var(--bg) 84%);
+}
+html[data-theme="dark"] .auth-alpine-atmosphere::before{
+ background-image:url('assets/design/alpen-panorama-dark-960.webp');
+ opacity:.45;
+ filter:saturate(.64) brightness(.86);
+}
+html[data-theme="dark"] .auth-alpine-atmosphere::after{
+ background:linear-gradient(180deg,rgba(8,15,12,.04) 0%,rgba(8,15,12,.36) 35%,var(--bg) 84%);
+}
+main{position:relative;z-index:1}
+@media(min-width:700px){
+ .auth-alpine-atmosphere::before{background-image:url('assets/design/alpen-panorama-1600.webp')}
+ html[data-theme="dark"] .auth-alpine-atmosphere::before{background-image:url('assets/design/alpen-panorama-dark-1600.webp')}
+}
+@media(prefers-reduced-transparency:reduce){
+ .auth-alpine-atmosphere::before{opacity:.20}
+ section{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+
+</style><div class="auth-alpine-atmosphere" aria-hidden="true"></div><main><a class="auth-back" href="index.html" aria-label="Zurück zur Forstsau-App"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/><path d="M9 12h12"/></svg>Zurück zur App</a><picture><source srcset="assets/fantasy-league-logo.webp" type="image/webp"><img src="assets/fantasy-league-logo.png" alt="Forsthaus Fantasy League"></picture><section><h1 id="title">Anmelden</h1><p class="muted">Login mit Namen und Passwort. Keine persönliche E-Mail-Adresse nötig.</p><form id="access"><label for="login">Login-Name</label><input id="login" name="login" pattern="[a-zA-Z0-9_]{3,24}" minlength="3" maxlength="24" required autocomplete="username"><div id="register" hidden><label for="name">Name in der Liga</label><input id="name" maxlength="32" autocomplete="nickname"></div><label for="password">Passwort</label><input id="password" type="password" minlength="10" maxlength="128" required autocomplete="current-password"><div id="repeat-wrap" hidden><label for="repeat">Passwort wiederholen</label><input id="repeat" type="password" autocomplete="new-password"></div><button id="submit">Anmelden</button></form><button id="normal-login" type="button" hidden>Bereits registriert? Zur Anmeldung</button><p id="status" role="status"></p><div id="session" hidden><p id="who"></p><p class="muted">Dein Zugang ist eingerichtet. Öffne die Liga, um deinen Kader, den Draft und die Wertung zu sehen.</p><a class="button auth-enter-app" href="index.html">Zur Liga →</a><button id="logout">Abmelden</button></div></section><section id="invites" hidden><h2>Zugänge verwalten</h2><div id="member-status"></div><button id="refresh-links" type="button">Status aktualisieren</button><p class="muted">Ein neuer Link ersetzt ältere ungenutzte Links für denselben Platz. Gültig für sieben Tage. Über Signal persönlich verschicken.</p><label for="slot">Spielerplatz</label><select id="slot"></select><button id="create-invite">Einladung erstellen</button><button id="create-reset">Passwort-Reset-Link erstellen</button><button id="revoke-link">Offenen Link sperren</button><label for="link">Einladungslink</label><textarea id="link" readonly></textarea><button id="copy">Link kopieren</button></section></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script><script>
 const URL_BASE='https://qqfbmzovzjbjaywzxiyf.supabase.co',KEY='sb_publishable_6Dg_nvVHbcKLeFh6Goo0RQ_dsQ2cqsW';
 const db=supabase.createClient(URL_BASE,KEY),el=id=>document.getElementById(id);
 let resetToken=new URLSearchParams(location.hash.slice(1)).get('reset')||sessionStorage.getItem('fantasy_pending_reset');

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="560" viewBox="0 0 1440 560" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4efe5"/>
+      <stop offset="1" stop-color="#e1dbcf"/>
+    </linearGradient>
+    <linearGradient id="mount1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c6c3b8"/>
+      <stop offset="1" stop-color="#d8d4ca"/>
+    </linearGradient>
+    <linearGradient id="mount2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d7d3c7"/>
+      <stop offset="1" stop-color="#ece7dc"/>
+    </linearGradient>
+    <linearGradient id="forest" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#839080" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#647163" stop-opacity="0.92"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="560" fill="url(#bg)"/>
+  <path d="M0 312L81 242L136 272L226 150L336 274L440 168L526 277L633 126L738 289L853 165L959 281L1094 134L1186 252L1278 184L1373 290L1440 250V560H0V312Z" fill="url(#mount1)"/>
+  <path d="M0 344L138 240L243 312L327 213L446 330L538 257L618 340L752 214L856 339L976 247L1087 345L1205 225L1310 330L1440 266V560H0V344Z" fill="url(#mount2)"/>
+  <path d="M0 436C92 398 177 368 282 375C389 383 460 421 562 423C669 426 752 381 862 381C972 381 1065 431 1176 433C1263 434 1354 403 1440 380V560H0V436Z" fill="#ced1c6" opacity="0.36"/>
+  <g fill="url(#forest)">
+    <path d="M44 560V479L72 432L99 479V560H44Z"/>
+    <path d="M90 560V449L122 393L153 449V560H90Z"/>
+    <path d="M143 560V470L168 431L195 470V560H143Z"/>
+    <path d="M216 560V435L254 371L292 435V560H216Z"/>
+    <path d="M285 560V463L316 417L349 463V560H285Z"/>
+    <path d="M373 560V481L401 440L429 481V560H373Z"/>
+    <path d="M451 560V441L488 378L526 441V560H451Z"/>
+    <path d="M532 560V477L561 434L590 477V560H532Z"/>
+    <path d="M615 560V432L655 363L693 432V560H615Z"/>
+    <path d="M724 560V468L752 425L782 468V560H724Z"/>
+    <path d="M819 560V444L856 382L894 444V560H819Z"/>
+    <path d="M912 560V480L939 438L968 480V560H912Z"/>
+    <path d="M1023 560V438L1060 377L1098 438V560H1023Z"/>
+    <path d="M1116 560V472L1143 430L1170 472V560H1116Z"/>
+    <path d="M1212 560V435L1252 370L1292 435V560H1212Z"/>
+    <path d="M1321 560V468L1350 424L1379 468V560H1321Z"/>
+  </g>
+</svg>
